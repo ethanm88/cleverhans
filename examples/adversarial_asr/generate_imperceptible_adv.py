@@ -51,7 +51,9 @@ def ReadFromWav(data, batch_size):
     lengths = []
     th_batch = []
     psd_max_batch = []
-    
+    x = 0
+    # Test test hello
+    #
     # read the .wav file
     for i in range(batch_size):
         sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))

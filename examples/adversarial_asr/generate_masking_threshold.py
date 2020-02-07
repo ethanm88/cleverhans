@@ -125,7 +125,7 @@ def generate_th(audio, fs, window_size=2048):
     # compute the global masking threshold in each window
     for i in range(PSD.shape[1]):
         theta_xs.append(compute_th(PSD[:,i], barks, ATH, freqs))
-    theta_xs = np.array(theta_xs)
+    theta_xs = np.array(theta_xs) #frames x frequencies?
     return theta_xs, psd_max
 
 

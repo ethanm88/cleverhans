@@ -51,9 +51,7 @@ def ReadFromWav(data, batch_size):
     lengths = []
     th_batch = []
     psd_max_batch = []
-    x = 0
-    # Test test hello
-    #
+  
     # read the .wav file
     for i in range(batch_size):
         sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))
@@ -95,7 +93,14 @@ def ReadFromWav(data, batch_size):
     
     return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
         
+"""
+Algorithm:
+for(i: 0 to batch_size)
+    for (th of th_batch[i])
+        sd = th/3
+        audios_np[i] += N(0, SD)  #np.random.normal(mu, sigma, 1)
 
+"""
 class Attack:
     def __init__(self, sess, batch_size=1,
                  lr_stage1=100, lr_stage2=0.1, num_iter_stage1=1000, num_iter_stage2=4000, th=None,

@@ -95,8 +95,10 @@ def ReadFromWav(data, batch_size):
         
 """
 Algorithm:
+
 for(i: 0 to batch_size)
-    for (th of th_batch[i])
+    audios_np[i] = FFT (audio_np[i]) #librosa.core.fft_frequencies(fs, window_size)
+    for (th of th_batch[i]) # need to account for windowing
         sd = th/3
         audios_np[i] += N(0, SD)  #np.random.normal(mu, sigma, 1)
 

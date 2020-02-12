@@ -93,7 +93,7 @@ def ReadFromWav(data, batch_size):
     
     return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
         
-""" hello
+""" 
 Algorithm:
 
 for(i: 0 to batch_size)
@@ -103,6 +103,16 @@ for(i: 0 to batch_size)
         audios_np[i] += N(0, SD)  #np.random.normal(mu, sigma, 1)
 
 """
+
+def ApplyDefense (batch_size, th_batch, audios_np):
+    for i in range(batch_size):
+        #audios_np[i] = FFT (audio_np[i]) #librosa.core.fft_frequencies(fs, window_size)
+        for j in range(len(th_batch[i])):
+            sd = th_batch[i][j]/3
+            audios_np[i][j] = audios_np[i][j] + np.random.normal(0, sd, 1);
+            audios_np[i][j] = max (audios_np[i][j], 0)
+
+
 class Attack:
     def __init__(self, sess, batch_size=1,
                  lr_stage1=100, lr_stage2=0.1, num_iter_stage1=1000, num_iter_stage2=4000, th=None,

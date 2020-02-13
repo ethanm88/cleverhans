@@ -37,9 +37,9 @@ FLAGS = flags.FLAGS
 def ReadFromWav(data, batch_size):
     """
     Returns: 
-        audios_np: a numpy array of size (batch_size, max_length) in float
+        audios_np: a numpy array of size (batch_size, max_length) in float, For each sample, there is an list  of amplitudes with values between -32768 and +32768
         trans: a numpy array includes the targeted transcriptions (batch_size, )
-        th_batch: a numpy array of the masking threshold, each of size (?, 1025)
+        th_batch: a numpy array of the masking threshold, each of size (?, 1025). Sample * frame * bin within frame
         psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
         max_length: the max length of the batch of audios
         sample_rate_np: a numpy array
@@ -76,7 +76,7 @@ def ReadFromWav(data, batch_size):
     masks_freq = np.zeros([batch_size, max_length_freq, 80])
     for i in range(batch_size):
         audio_float = audios[i].astype(float)
-        audios_np[i, :lengths[i]] = audio_float   
+        audios_np[i, :lengths[i]] = audio_float
         masks[i, :lengths[i]] = 1
         masks_freq[i, :lengths_freq[i], :] = 1
  
@@ -93,24 +93,21 @@ def ReadFromWav(data, batch_size):
     
     return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
         
-""" 
-Algorithm:
 
-for(i: 0 to batch_size)
-    audios_np[i] = FFT (audio_np[i]) #librosa.core.fft_frequencies(fs, window_size)
-    for (th of th_batch[i]) # need to account for windowing
-        sd = th/3
-        audios_np[i] += N(0, SD)  #np.random.normal(mu, sigma, 1)
-
-"""
 
 def ApplyDefense (batch_size, th_batch, audios_np):
+    noisy_np = []
     for i in range(batch_size):
-        #audios_np[i] = FFT (audio_np[i]) #librosa.core.fft_frequencies(fs, window_size)
+        noisy_np[i] = librosa.core.stft(audios_np[i], center=False)
         for j in range(len(th_batch[i])):
-            sd = th_batch[i][j]/3
-            audios_np[i][j] = audios_np[i][j] + np.random.normal(0, sd, 1);
-            audios_np[i][j] = max (audios_np[i][j], 0)
+            for k in range(len(th_batch[i][j]))
+                sd = th_batch[i][j][k]/3
+                noisy_np[i][j][k] = noisy_np[i][j][k] + np.random.normal(0, sd, 1);
+                noisy_np[i][j][k] = max (noisy_np[i][j][k], 0)
+
+    noisy_np = librosa.istft(noisy_np) #apply some post-processing to the data to get to correct format
+    #self.features = create_features(self.pass_in, self.sample_rate_tf, self.mask_freq)
+    #self.inputs = create_inputs(model, self.features, self.tgt_tf, self.batch_size, self.mask_freq)
 
 
 class Attack:
@@ -154,14 +151,14 @@ class Attack:
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])                      
             self.apply_delta = tf.clip_by_value(self.delta, -FLAGS.initial_bound, FLAGS.initial_bound) * self.rescale
             self.new_input = self.apply_delta * self.mask + self.input_tf            
-            self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2**15, 2**15-1)
+            self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2**15, 2**15-1) # creating audio to be passed in
        
             # generate the inputs that are needed for the lingvo model
             self.features = create_features(self.pass_in, self.sample_rate_tf, self.mask_freq)
             self.inputs = create_inputs(model, self.features, self.tgt_tf, self.batch_size, self.mask_freq)  
         
             task = model.GetTask()
-            metrics = task.FPropDefaultTheta(self.inputs)
+            metrics = task.FPropDefaultTheta(self.inputs) # forward propagation of the model based on the inputs
             # self.celoss with the shape (batch_size)
             self.celoss = tf.get_collection("per_loss")[0]         
             self.decoded = task.Decode(self.inputs)
@@ -169,9 +166,9 @@ class Attack:
         
         # compute the loss for masking threshold
         self.loss_th_list = []
-        self.transform = Transform(FLAGS.window_size)
+        self.transform = Transform(FLAGS.window_size) # Transform object found in tools.py
         for i in range(self.batch_size):
-            logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
+            logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i]) # calculates the stft of delta
             loss_th =  tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[i]))            
             loss_th = tf.expand_dims(loss_th, dim=0) 
             self.loss_th_list.append(loss_th)
@@ -291,7 +288,7 @@ class Attack:
         #noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
         feed_dict = {self.input_tf: audios, 
-                     self.tgt_tf: trans, 
+                     self.tgt_tf: trans, #targetted labels
                      self.sample_rate_tf: sample_rate, 
                      self.th: th_batch, 
                      self.psd_max_ori: psd_max_batch,                    

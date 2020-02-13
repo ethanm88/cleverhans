@@ -29,7 +29,7 @@ def _CreateAsrFrontend():
   p.output_stride = 3
   return p.cls(p)
 
-def create_features(input_tf, sample_rate_tf, mask_freq):
+def create_features(input_tf, sample_rate_tf, mask_freq): #format features for lingvo model
     """
     Return:
         A tensor of features with size (batch_size, max_time_steps, 80)
@@ -47,7 +47,7 @@ def create_features(input_tf, sample_rate_tf, mask_freq):
     features_tf = features_tf * mask_freq
     return features_tf    
           
-def create_inputs(model, features, tgt, batch_size, mask_freq):    
+def create_inputs(model, features, tgt, batch_size, mask_freq):    #format inputs for lingvo model - care about what is going into model
     tgt_ids, tgt_labels, tgt_paddings = model.GetTask().input_generator.StringsToIds(tgt)
     
     # we expect src_inputs to be of shape [batch_size, num_frames, feature_dim, channels]
@@ -104,7 +104,7 @@ class Transform(object):
         self.window_size = window_size
     
     def __call__(self, x, psd_max_ori):
-        win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step)
+        win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step) # calculated stft
         z = self.scale *tf.abs(win / self.window_size)
         psd = tf.square(z)
         PSD = tf.pow(10., 9.6) / tf.reshape(psd_max_ori, [-1, 1, 1]) * psd

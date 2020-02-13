@@ -111,8 +111,8 @@ def generate_th(audio, fs, window_size=2048):
     """
 	returns the masking threshold theta_xs and the max psd of the audio
     """
-    PSD, psd_max= compute_PSD_matrix(audio , window_size)  
-    freqs = librosa.core.fft_frequencies(fs, window_size)
+    PSD, psd_max= compute_PSD_matrix(audio , window_size)  #PSD (1025 * #frames) list
+    freqs = librosa.core.fft_frequencies(fs, window_size) # (1025) list
     barks = Bark(freqs)
 
     # compute the quiet threshold 

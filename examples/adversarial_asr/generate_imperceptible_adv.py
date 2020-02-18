@@ -95,19 +95,25 @@ def ReadFromWav(data, batch_size):
         
 
 
-def ApplyDefense (batch_size, th_batch, audios_np):
-    noisy_np = []
+def ApplyDefense (batch_size, th_batch, audios):
+    noisy = []
     for i in range(batch_size):
-        noisy_np[i] = librosa.core.stft(audios_np[i], center=False)
+        noisy[i] = librosa.core.stft(audios[i], center=False)
         for j in range(len(th_batch[i])):
             for k in range(len(th_batch[i][j]))
                 sd = th_batch[i][j][k]/3
-                noisy_np[i][j][k] = noisy_np[i][j][k] + np.random.normal(0, sd, 1);
-                noisy_np[i][j][k] = max (noisy_np[i][j][k], 0)
+                noisy[i][j][k] = noisy[i][j][k] + np.random.normal(0, sd, 1);
+                noisy[i][j][k] = max (noisy[i][j][k], 0)
 
-    noisy_np = librosa.istft(noisy_np) #apply some post-processing to the data to get to correct format
-    #self.features = create_features(self.pass_in, self.sample_rate_tf, self.mask_freq)
-    #self.inputs = create_inputs(model, self.features, self.tgt_tf, self.batch_size, self.mask_freq)
+    noisy = librosa.istft(noisy) #apply some post-processing to the data to get to correct format
+    pass_in = tf.clip_by_value(noisy, -2 ** 15, 2 ** 15 - 1)
+    features = create_features(self.pass_in, self.sample_rate_tf, self.mask_freq)
+    inputs = create_inputs(model, self.features, self.tgt_tf, self.batch_size, self.mask_freq)
+
+def FeedForward (audios, sample_rate, mask_freq): #not finished
+    pass_in = tf.clip_by_value(audios, -2 ** 15, 2 ** 15 - 1)
+    features = create_features(pass_in, sample_rate, mask_freq) #I think we need to modify create_features method
+    inputs = create_inputs(model, features, self.tgt_tf, self.batch_size, self.mask_freq)
 
 
 class Attack:
@@ -122,12 +128,12 @@ class Attack:
         self.lr_stage1 = lr_stage1
         
         tf.set_random_seed(1234)
-        params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
+        params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test') #cannot find params class
         params.random_seed = 1234
         params.is_eval = True
         params.cluster.worker.gpus_per_replica = 1
         cluster = cluster_factory.Cluster(params.cluster)
-        with cluster, tf.device(cluster.GetPlacer()):
+        with cluster, tf.device(cluster.GetPlacer()): #error handling
             model = params.cls(params)
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32), name='qq_delta')
             
@@ -160,8 +166,8 @@ class Attack:
             task = model.GetTask()
             metrics = task.FPropDefaultTheta(self.inputs) # forward propagation of the model based on the inputs
             # self.celoss with the shape (batch_size)
-            self.celoss = tf.get_collection("per_loss")[0]         
-            self.decoded = task.Decode(self.inputs)
+            self.celoss = tf.get_collection("per_loss")[0] #https://www.tensorflow.org/api_docs/python/tf/compat/v1/get_collection - do not understand this, but seems to return losses
+            self.decoded = task.Decode(self.inputs) #seems to return the predictions
         
         
         # compute the loss for masking threshold
@@ -195,12 +201,12 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
                     
         # reassign the variables  
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
+        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))   #do the calculation in the provided parameters
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
         
         #noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
-        feed_dict = {self.input_tf: audios, 
+        feed_dict = {self.input_tf: audios, #setting the input to the raw audios
                      self.tgt_tf: trans, 
                      self.sample_rate_tf: sample_rate, 
                      self.th: th_batch, 
@@ -435,11 +441,17 @@ def main(argv):
                                      
                     name, _ = data_sub[0, i].split(".")                 
                     saved_name = FLAGS.root_dir + str(name) + "_stage2.wav"                                       
-                    adv_example[i] =  adv_example[i] / 32768.
+                    adv_example[i] =  adv_example[i] / 32768. #this line should be removed
                     wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
                     print(saved_name)                    
                     
+                #Experiment 1
+                adv_example_noised = ApplyDefense(adv_example, th_batch, batch_size)
+                #run adv_example_noised and adv_example through classifier
+                #need add training component
+                #Experiment 2
 
+                #Experiment 3
 if __name__ == '__main__':
     app.run(main)
     

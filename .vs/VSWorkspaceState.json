@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\cleverhans",
+    "\\examples",
+    "\\examples\\adversarial_asr"
+  ],
+  "SelectedNode": "\\examples\\adversarial_asr\\generate_imperceptible_adv.py",
+  "PreviewInSolutionExplorer": false
+}

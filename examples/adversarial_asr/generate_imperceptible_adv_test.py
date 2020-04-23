@@ -99,7 +99,7 @@ def ReadFromWav(data, batch_size):
         
 
 
-def ApplyDefense (batch_size, th_batch, audios_stft):
+def applyDefense (batch_size, th_batch, audios_stft):
     noisy = []
     #noisy = [[[0]*1025]*305]*batch_size
   #  for i in range(batch_size):
@@ -131,7 +131,7 @@ def graphs(audio_stft, noisy, freqs, th_batch_sorted, sample_num, bin_num):
     plt.show()
 
 
-def get_freq_domain(batch_size, audios, sample_rate, th_batch, num_bins):
+def getFreqDomain(batch_size, audios, sample_rate, th_batch, num_bins):
     audio_stft = []
     freqs = [[[0]*1025]*305]*5
     for i in range(batch_size):
@@ -139,7 +139,7 @@ def get_freq_domain(batch_size, audios, sample_rate, th_batch, num_bins):
         for j in range(num_bins):
             freqs[i][j] = ((np.fft.fftfreq(len(audio_stft[i][j]), d=(1 / sample_rate))))
 
-    noisy = ApplyDefense(batch_size, th_batch, audio_stft)
+    noisy = applyDefense(batch_size, th_batch, audio_stft)
 
     for i in range(batch_size):
         for j in range(num_bins):
@@ -169,7 +169,7 @@ def main(argv):
     for l in range(num_loops):
         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
         audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub,batch_size)
-        audio_stft, noisy, freqs, th_batch_sorted = get_freq_domain(batch_size, audios, sample_rate, th_batch, 305)
+        audio_stft, noisy, freqs, th_batch_sorted = getFreqDomain(batch_size, audios, sample_rate, th_batch, 305)
         graphs(audio_stft, noisy, freqs, th_batch_sorted, 0, 0)
         '''
         full_masking_threshold = []

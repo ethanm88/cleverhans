@@ -120,13 +120,16 @@ def generate_th(audio, fs, window_size=2048):
     bark_ind = np.argmax(barks > 1)
     ATH[bark_ind:] = quiet(freqs[bark_ind:])
 
+    quiet_ind = np.argmax(freqs > 20)
+    quietThreshold = np.zeros(len(barks)) - np.inf
+    quietThreshold[quiet_ind:] = quiet(freqs[quiet_ind:])
     # compute the global masking threshold theta_xs 
     theta_xs = []
     # compute the global masking threshold in each window
     for i in range(PSD.shape[1]):
         theta_xs.append(compute_th(PSD[:,i], barks, ATH, freqs))
     theta_xs = np.array(theta_xs) #frames x frequencies?
-    return theta_xs, psd_max
+    return theta_xs, psd_max, quietThreshold # edited
 
 
 

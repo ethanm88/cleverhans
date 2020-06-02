@@ -16,8 +16,9 @@ flags.DEFINE_integer('batch_size', '5',
                     'batch_size to do the testing')
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
-flags.DEFINE_string('stage', "stage2", 'which stage to test')
+flags.DEFINE_string('stage', "stage2", 'which stage to test or defense')
 flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
+
 
 FLAGS = flags.FLAGS
 

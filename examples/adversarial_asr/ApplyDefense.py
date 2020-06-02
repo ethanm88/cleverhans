@@ -220,7 +220,7 @@ def main(argv):
             name, _ = data_sub[0, k].split(".")
             saved_name = FLAGS.root_dir + str(name) + "_defense.wav"
 
-            overlawAudio('original.wav','defensive_perturbation.wav')
+            overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
 
     return 0
 

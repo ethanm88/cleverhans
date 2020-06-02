@@ -104,7 +104,7 @@ def ReadFromWav(data, batch_size):
     return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 
-def applyDefense(batch_size, th_batch, audios_stft):
+def applyDefense(batch_size, th_batch, audios_stft, stan_dev):
     noisy = []
     # noisy = [[[0]*1025]*305]*batch_size
     #  for i in range(batch_size):
@@ -113,7 +113,7 @@ def applyDefense(batch_size, th_batch, audios_stft):
         for j in range(len(th_batch[i])):
             temp2 = []
             for k in range(len(th_batch[i][j])):
-                sd = th_batch[i][j][k] / 6  # changed
+                sd = th_batch[i][j][k] *stan_dev  # changed
                 temp2.append(min(max(np.random.normal(th_batch[i][j][k] / 2, sd, 1)[0], 0), th_batch[i][j][k]))
 
             temp1.append(temp2)
@@ -188,7 +188,7 @@ def overlawAudio(file1, file2, final_file_name):
     combined.export(final_file_name, format='wav')
     return 'finished'
 
-def main(argv):
+def save_audios(stan_dev):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
     num = len(data[0])
@@ -215,7 +215,7 @@ def main(argv):
             audio_stft = []
             for i in range(batch_size):
                 audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
-            noisy = applyDefense(batch_size, psd_threshold, audio_stft)
+            noisy = applyDefense(batch_size, psd_threshold, audio_stft, stan_dev)
 
             for k in range(batch_size):
                 phase = []
@@ -242,9 +242,5 @@ def main(argv):
     return 0
 
 
-
-
-if __name__ == '__main__':
-    app.run(main)
 
 

@@ -6,7 +6,7 @@ import matplotlib as plt
 import numpy as np
 from absl import flags
 
-flags.DEFINE_float('sd', '0.0', 'standard deviation')
+flags.DEFINE_float('k', '0.0', 'constant to influence standard deviation and mean')
 FLAGS = flags.FLAGS
 
 def graph(all_stan_dev, all_wer_adv, all_wer_benign):
@@ -31,7 +31,7 @@ def main(argv):
     #for sd in np.arange(initial, maximum, increment):
     # all_stan_dev.append(sd)
     # apply defense:
-    apply_defense_mod.save_audios(FLAGS.sd)
+    apply_defense_mod.save_audios(FLAGS.k)
 
     # find word error rates:
     temp_adv, temp_benign = evaluate_defense_mod.get_WERs()

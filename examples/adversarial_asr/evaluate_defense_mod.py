@@ -8,6 +8,8 @@ from tool import create_features, create_inputs
 import time
 from lingvo.core import cluster_factory
 from absl import flags
+import apply_defense_mod
+
 
 from absl import app
 
@@ -117,49 +119,60 @@ def get_WERs():
                 decoded_outputs = task.Decode(inputs)
                 dec_metrics_dict = task.CreateDecoderMetrics()
 
+                initial_constant = 0.0
+                final_constant = 1.0
+                increment = 0.05
 
-                correct = 0
-                wer_adv = 0
-                wer_benign = 0
-                num_loops = 1
-                for l in range(num_loops):
-                    for x in range(2):
-                        data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                        audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size,x)
-                        feed_dict = {input_tf: audios_np,
-                                     sample_rate_tf: sample_rate,
-                                     tgt_tf: tgt_np,
-                                     mask_tf: mask_freq}
+                all_adv = []
+                all_benign = []
 
-                        losses = sess.run(loss, feed_dict)
-                        predictions = sess.run(decoded_outputs, feed_dict)
+                for factor in np.arange(initial_constant,final_constant,increment):
+                    apply_defense_mod.save_audios(factor)
+                    correct = 0
+                    wer_adv = 0
+                    wer_benign = 0
+                    num_loops = 1
+                    for l in range(num_loops):
+                        for x in range(2):
+                            data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+                            audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size,x)
+                            feed_dict = {input_tf: audios_np,
+                                         sample_rate_tf: sample_rate,
+                                         tgt_tf: tgt_np,
+                                         mask_tf: mask_freq}
 
-                        task.PostProcessDecodeOut(predictions, dec_metrics_dict)
-                        wer_value = dec_metrics_dict['wer'].value * 100.
+                            losses = sess.run(loss, feed_dict)
+                            predictions = sess.run(decoded_outputs, feed_dict)
 
-                        for i in range(batch_size):
-                            print("pred:{}".format(predictions['topk_decoded'][i, 0]))
-                            print("targ:{}".format(tgt_np[i].lower()))
-                            print("true: {}".format(data_sub[1, i].lower()))
+                            task.PostProcessDecodeOut(predictions, dec_metrics_dict)
+                            wer_value = dec_metrics_dict['wer'].value * 100.
 
-                            if predictions['topk_decoded'][i, 0] == tgt_np[i].lower():
-                                correct += 1
-                                print("------------------------------")
-                                print("example {} succeeds".format(i))
+                            for i in range(batch_size):
+                                print("pred:{}".format(predictions['topk_decoded'][i, 0]))
+                                print("targ:{}".format(tgt_np[i].lower()))
+                                print("true: {}".format(data_sub[1, i].lower()))
 
-                        print("Now, the WER is: {0:.2f}%".format(wer_value))
-                        if x == 0:
-                            wer_adv = wer_value
-                        else:
-                            wer_benign = wer_value
-                    print("num of examples succeed: {}".format(correct))
-                    print("success rate: {}%".format(correct / float(num) * 100))
-                    print('Adv WER = ',wer_adv)
-                    print('Benign WER', wer_benign)
+                                if predictions['topk_decoded'][i, 0] == tgt_np[i].lower():
+                                    correct += 1
+                                    print("------------------------------")
+                                    print("example {} succeeds".format(i))
 
-                with open("data.txt", "a") as text_file:
-                    text_file.write(str(wer_adv) + " " + str(wer_benign))
-                return wer_adv, wer_benign
+                            print("Now, the WER is: {0:.2f}%".format(wer_value))
+                            if x == 0:
+                                wer_adv = wer_value
+                            else:
+                                wer_benign = wer_value
+                        print("num of examples succeed: {}".format(correct))
+                        print("success rate: {}%".format(correct / float(num) * 100))
+                        print('Adv WER = ',wer_adv)
+                        print('Benign WER', wer_benign)
+
+                    with open("data.txt", "a") as text_file:
+                        text_file.write(str(wer_adv) + " " + str(wer_benign))
+                    all_adv.append(wer_adv)
+                    all_benign.append(wer_benign)
+                print('Adversarial WER: ', wer_adv)
+                print('Benign WER: ', wer_benign)
 
 
 

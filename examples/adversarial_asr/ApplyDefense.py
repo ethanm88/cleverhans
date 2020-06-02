@@ -201,17 +201,20 @@ def main(argv):
 
         audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
         psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
-        noisy = applyDefense(batch_size, psd_threshold, audio_stft)
-        for k in batch_size:
-            audio_stft = []
-            phase = []
-            audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[k], center=False))))
-            phase.append((numpy.angle(librosa.core.stft(audios[k], center=False))))
 
-            time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase[k])),center=False)
+        audio_stft = []
+        for i in range(batch_size):
+            audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
+        noisy = applyDefense(batch_size, psd_threshold, audio_stft)
+
+        for k in range(batch_size):
+            phase = []
+            phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
+
+            time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
             wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype='int16'))
 
-            time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase[k])),center=False)
+            time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
             wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype='int16'))
 
             name, _ = data_sub[0, k].split(".")

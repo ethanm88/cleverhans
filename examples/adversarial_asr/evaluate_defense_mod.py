@@ -8,6 +8,7 @@ from tool import create_features, create_inputs
 import time
 from lingvo.core import cluster_factory
 from absl import flags
+
 from absl import app
 
 flags.DEFINE_string('input', 'read_data.txt',
@@ -81,6 +82,7 @@ def get_WERs():
     assert num % batch_size == 0
 
     with tf.device("/gpu:0"):
+
         tf.set_random_seed(1234)
         tfconf = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=tfconf) as sess:
@@ -115,9 +117,11 @@ def get_WERs():
                 decoded_outputs = task.Decode(inputs)
                 dec_metrics_dict = task.CreateDecoderMetrics()
 
+
                 correct = 0
                 wer_adv = 0
                 wer_benign = 0
+                num_loops = 1
                 for l in range(num_loops):
                     for x in range(2):
                         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
@@ -144,13 +148,18 @@ def get_WERs():
                                 print("example {} succeeds".format(i))
 
                         print("Now, the WER is: {0:.2f}%".format(wer_value))
-                        wer_adv = wer_value
                         if x == 0:
                             wer_adv = wer_value
                         else:
                             wer_benign = wer_value
                     print("num of examples succeed: {}".format(correct))
                     print("success rate: {}%".format(correct / float(num) * 100))
+                    print('Adv WER = ',wer_adv)
+                    print('Benign WER', wer_benign)
+
+                with open("data.txt", "a") as text_file:
+                    text_file.write(str(wer_adv) + " " + str(wer_benign))
                 return wer_adv, wer_benign
+
 
 

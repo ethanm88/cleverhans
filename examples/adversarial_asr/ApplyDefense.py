@@ -113,7 +113,7 @@ def applyDefense(batch_size, th_batch, audios_stft):
         for j in range(len(th_batch[i])):
             temp2 = []
             for k in range(len(th_batch[i][j])):
-                sd = th_batch[i][j][k] / 6  # changed
+                sd = th_batch[i][j][k]/6  # changed
                 temp2.append(min(max(np.random.normal(th_batch[i][j][k] / 2, sd, 1)[0], 0), th_batch[i][j][k]))
 
             temp1.append(temp2)

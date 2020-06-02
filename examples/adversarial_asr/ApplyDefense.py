@@ -200,7 +200,7 @@ def main(argv):
     for l in range(num_loops):
         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
 
-        audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths, ATH_batch = ReadFromWav(data_sub, batch_size)
+        audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
         psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
         noisy = applyDefense(batch_size, psd_threshold, audio_stft)
         for k in batch_size:

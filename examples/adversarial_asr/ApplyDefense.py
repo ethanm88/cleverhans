@@ -44,70 +44,64 @@ FLAGS = flags.FLAGS
 
 
 def ReadFromWav(data, batch_size):
-    """
-    Returns:
-        audios_np: a numpy array of size (batch_size, max_length) in float, For each sample, there is an list  of amplitudes with values between -32768 and +32768
-        trans: a numpy array includes the targeted transcriptions (batch_size, )
-        th_batch: a numpy array of the masking threshold, each of size (?, 1025). Sample * frame * bin within frame
-        psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
-        max_length: the max length of the batch of audios
-        sample_rate_np: a numpy array
-        masks: a numpy array of size (batch_size, max_length)
-        masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
-        lengths: a list of the length of original audios
-    """
-    audios = []
-    lengths = []
-    th_batch = []
-    psd_max_batch = []
+    def ReadFromWav(data, batch_size):
+        """
+        Returns:
+            audios_np: a numpy array of size (batch_size, max_length) in float
+            trans: a numpy array includes the targeted transcriptions (batch_size, )
+            th_batch: a numpy array of the masking threshold, each of size (?, 1025)
+            psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
+            max_length: the max length of the batch of audios
+            sample_rate_np: a numpy array
+            masks: a numpy array of size (batch_size, max_length)
+            masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
+            lengths: a list of the length of original audios
+        """
+        audios = []
+        lengths = []
+        th_batch = []
+        psd_max_batch = []
 
-    # read the .wav file
-    for i in range(batch_size):
+        # read the .wav file
+        for i in range(batch_size):
+            sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))
+            # read the wav form range from [-32767, 32768] or [-1, 1]
+            if max(audio_temp) < 1:
+                audio_np = audio_temp * 32768
+            else:
+                audio_np = audio_temp
 
-        sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))
+            length = len(audio_np)
 
-        # sample_rate_np, audio_temp = wav.read("imperceptible.wav")
-        # read the wav form range from [-32767, 32768] or [-1, 1]
-        if max(audio_temp) < 1:
-            audio_np = audio_temp * 32768
-        else:
-            audio_np = audio_temp
+            audios.append(audio_np)
+            lengths.append(length)
 
-        length = len(audio_np)
+        max_length = max(lengths)
 
-        audios.append(audio_np)
-        lengths.append(length)
+        # pad the input audio
+        audios_np = np.zeros([batch_size, max_length])
+        masks = np.zeros([batch_size, max_length])
+        lengths_freq = (np.array(lengths) // 2 + 1) // 240 * 3
+        max_length_freq = max(lengths_freq)
+        masks_freq = np.zeros([batch_size, max_length_freq, 80])
+        for i in range(batch_size):
+            audio_float = audios[i].astype(float)
+            audios_np[i, :lengths[i]] = audio_float
+            masks[i, :lengths[i]] = 1
+            masks_freq[i, :lengths_freq[i], :] = 1
 
-    max_length = max(lengths)
+            # compute the masking threshold
+            th, psd_max = generate_mask.generate_th(audios_np[i], sample_rate_np, FLAGS.window_size)
+            th_batch.append(th)
+            psd_max_batch.append(psd_max)
 
-    # pad the input audio
-    audios_np = np.zeros([batch_size, max_length])
-    masks = np.zeros([batch_size, max_length])
-    lengths_freq = (np.array(lengths) // 2 + 1) // 240 * 3
-    max_length_freq = max(lengths_freq)
-    masks_freq = np.zeros([batch_size, max_length_freq, 80])
+        th_batch = np.array(th_batch)
+        psd_max_batch = np.array(psd_max_batch)
 
-    ATH_batch = []
+        # read the transcription
+        trans = data[2, :]
 
-    for i in range(batch_size):
-        audio_float = audios[i].astype(float)
-        audios_np[i, :lengths[i]] = audio_float
-        masks[i, :lengths[i]] = 1
-        masks_freq[i, :lengths_freq[i], :] = 1
-
-        # compute the masking threshold
-        th, psd_max, ATH = generate_mask.generate_th(audios_np[i], sample_rate_np, FLAGS.window_size)
-        th_batch.append(th)
-        psd_max_batch.append(psd_max)
-        ATH_batch.append(ATH)
-
-    th_batch = np.array(th_batch)
-    psd_max_batch = np.array(psd_max_batch)
-
-    # read the transcription
-    trans = data[2, :]
-
-    return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths, ATH_batch
+        return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 
 def applyDefense(batch_size, th_batch, audios_stft):

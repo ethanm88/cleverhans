@@ -198,6 +198,10 @@ def main(argv):
     num_loops = 1
     for l in range(num_loops):
         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+        for m in range(batch_size):
+            data_sub[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_defense' + '.wav'
+        #temp_name, _ = data[0, i].split(".")
+        #final_name = "./" + str(name) + "_" + FLAGS.stage + ".wav"
 
         audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
         psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)

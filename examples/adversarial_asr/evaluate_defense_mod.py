@@ -75,7 +75,7 @@ def Read_input(data, batch_size, type): # 0 = adv 1 = benign
     return audios_np, sample_rate_np, trans, masks_freq
 
 
-def get_WERs():
+def main(argv):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     # calculate the number of loops to run the test
     num = len(data[0])
@@ -127,6 +127,7 @@ def get_WERs():
                 all_benign = []
 
                 for factor in np.arange(initial_constant,final_constant,increment):
+                    print(factor)
                     apply_defense_mod.save_audios(factor)
                     correct = 0
                     wer_adv = 0
@@ -174,5 +175,6 @@ def get_WERs():
                 print('Adversarial WER: ', wer_adv)
                 print('Benign WER: ', wer_benign)
 
-
+if __name__ == '__main__':
+    app.run(main)
 

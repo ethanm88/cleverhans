@@ -222,22 +222,41 @@ def main(argv):
                 phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
 
                 time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
-                wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype='int16'))
+                #print(numpy.array(time_series, dtype=float))
+                #wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype=float))
 
                 time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
-                wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype='int16'))
+                #wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype=float))
+
+                final_time_series = time_series*0.5 + time_series1*0.5
+                final_np = np.array(final_time_series, dtype='int16')
+
+                final_time_series = final_time_series/ 32768.
+                #final_np_2 = numpy.array(final_time_series, dtype='int16')
+                final_np_2 = np.copy(final_time_series)
+                final_np_2 = final_np_2.astype('float32')
 
                 name = ''
                 saved_name = ''
+                saved_name_2 = ''
                 if x == 0:
                     name, _ = data_sub[0, k].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_defense.wav"
+                    saved_name_2 = FLAGS.root_dir + str(name) + "_defense_2.wav"
                 else:
                     name, _ = data_sub[0, k].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_benign.wav"
+                    saved_name_2 = FLAGS.root_dir + str(name) + "_benign_2.wav"
+
 
                 print(saved_name)
-                overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
+                #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
+                wav.write(saved_name, sample_rate,final_time_series)
+                wav.write(saved_name_2, sample_rate,final_np_2)
+
+                sam, audiofile = wav.read(saved_name)
+                sam1, audiofile2 = wav.read(saved_name_2)
+                print('hello')
 
     return 0
 

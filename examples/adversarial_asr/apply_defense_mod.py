@@ -102,7 +102,7 @@ def ReadFromWav(data, batch_size):
     return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 
-def applyDefense(batch_size, th_batch, audios_stft, stan_dev):
+def applyDefense(batch_size, th_batch, audios_stft, factor):
     noisy = []
     # noisy = [[[0]*1025]*305]*batch_size
     #  for i in range(batch_size):
@@ -111,8 +111,9 @@ def applyDefense(batch_size, th_batch, audios_stft, stan_dev):
         for j in range(len(th_batch[i])):
             temp2 = []
             for k in range(len(th_batch[i][j])):
-                sd = th_batch[i][j][k] *stan_dev  # changed
-                temp2.append(min(max(np.random.normal(th_batch[i][j][k] / 2, sd, 1)[0], 0), th_batch[i][j][k]))
+                sd = th_batch[i][j][k] *factor  # changed
+                mean = th_batch[i][j][k] *factor*3
+                temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k]))
 
             temp1.append(temp2)
         noisy.append(temp1)
@@ -186,7 +187,7 @@ def overlawAudio(file1, file2, final_file_name):
     combined.export(final_file_name, format='wav')
     return 'finished'
 
-def save_audios(stan_dev):
+def save_audios(factor):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
     num = len(data[0])
@@ -213,17 +214,21 @@ def save_audios(stan_dev):
             audio_stft = []
             for i in range(batch_size):
                 audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
-            noisy = applyDefense(batch_size, psd_threshold, audio_stft, stan_dev)
+            noisy = applyDefense(batch_size, psd_threshold, audio_stft, factor)
 
             for k in range(batch_size):
                 phase = []
                 phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
 
                 time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
-                wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype='int16'))
+                #wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype='int16'))
 
                 time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
-                wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype='int16'))
+                #wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype='int16'))
+
+                final_time_series = time_series * 0.5 + time_series1 * 0.5
+
+                final_time_series = final_time_series / 32768.
 
                 name = ''
                 saved_name = ''
@@ -235,7 +240,8 @@ def save_audios(stan_dev):
                     saved_name = FLAGS.root_dir + str(name) + "_benign.wav"
 
                 print(saved_name)
-                overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
+                wav.write(saved_name, sample_rate, final_time_series)
+                #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
 
     return 0
 

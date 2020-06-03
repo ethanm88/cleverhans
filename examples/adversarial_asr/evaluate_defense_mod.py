@@ -28,7 +28,7 @@ flags.DEFINE_integer('factor', '0',
 FLAGS = flags.FLAGS
 
 
-def Read_input(data, batch_size, type): # 0 = adv 1 = benign
+def Read_input(data, batch_size): # 0 = adv 1 = benign
     """
     Returns:
         audios_np: a numpy array of size (batch_size, max_length) in float
@@ -41,7 +41,7 @@ def Read_input(data, batch_size, type): # 0 = adv 1 = benign
 
     for i in range(batch_size):
         name, _ = data[0, i].split(".")
-        if type == 0:
+        if FLAGS.adv:
             sample_rate_np, audio_temp = wav.read("./" + str(name) + "_defense" + ".wav")
         else:
             sample_rate_np, audio_temp = wav.read("./" + str(name) + "_benign" + ".wav")
@@ -70,7 +70,7 @@ def Read_input(data, batch_size, type): # 0 = adv 1 = benign
         masks_freq[i, :lengths_freq[i], :] = 1
 
     audios_np = audios_np.astype(float)
-    if type == 0:
+    if FLAGS.adv:
         trans = data[2, :]
     else:
         trans = data[1, :]
@@ -135,42 +135,45 @@ def main(argv):
                 wer_benign = 0
                 num_loops = 1
                 for l in range(num_loops):
-                    for x in range(2):
-                        data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                        audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size,x)
-                        feed_dict = {input_tf: audios_np,
-                                     sample_rate_tf: sample_rate,
-                                     tgt_tf: tgt_np,
-                                     mask_tf: mask_freq}
+                    data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+                    audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size)
+                    feed_dict = {input_tf: audios_np,
+                                 sample_rate_tf: sample_rate,
+                                 tgt_tf: tgt_np,
+                                 mask_tf: mask_freq}
 
-                        losses = sess.run(loss, feed_dict)
-                        predictions = sess.run(decoded_outputs, feed_dict)
+                    losses = sess.run(loss, feed_dict)
+                    predictions = sess.run(decoded_outputs, feed_dict)
 
-                        task.PostProcessDecodeOut(predictions, dec_metrics_dict)
-                        wer_value = dec_metrics_dict['wer'].value * 100.
+                    task.PostProcessDecodeOut(predictions, dec_metrics_dict)
+                    wer_value = dec_metrics_dict['wer'].value * 100.
 
-                        for i in range(batch_size):
-                            print("pred:{}".format(predictions['topk_decoded'][i, 0]))
-                            print("targ:{}".format(tgt_np[i].lower()))
-                            print("true: {}".format(data_sub[1, i].lower()))
+                    for i in range(batch_size):
+                        print("pred:{}".format(predictions['topk_decoded'][i, 0]))
+                        print("targ:{}".format(tgt_np[i].lower()))
+                        print("true: {}".format(data_sub[1, i].lower()))
 
-                            if predictions['topk_decoded'][i, 0] == tgt_np[i].lower():
-                                correct += 1
-                                print("------------------------------")
-                                print("example {} succeeds".format(i))
+                        if predictions['topk_decoded'][i, 0] == tgt_np[i].lower():
+                            correct += 1
+                            print("------------------------------")
+                            print("example {} succeeds".format(i))
 
-                        print("Now, the WER is: {0:.2f}%".format(wer_value))
-                        if x == 0:
-                            wer_adv = wer_value
-                        else:
-                            wer_benign = wer_value
-                    print("num of examples succeed: {}".format(correct))
-                    print("success rate: {}%".format(correct / float(num) * 100))
-                    print('Adv WER = ',wer_adv)
-                    print('Benign WER', wer_benign)
+                    print("Now, the WER is: {0:.2f}%".format(wer_value))
+                    if FLAGS.adv:
+                        print("Type: Adversarial")
+                        wer_adv = wer_value
+                    else:
+                        print("Type: Benign")
+                        wer_benign = wer_value
+                print("num of examples succeed: {}".format(correct))
+                print("success rate: {}%".format(correct / float(num) * 100))
 
-                with open("data.txt", "a") as text_file:
-                    text_file.write(str(FLAGS.factor) + " " + str(wer_adv) + " " + str(wer_benign) + "\n")
+            if FLAGS.adv:
+                with open("adv.txt", "a") as text_file:
+                    text_file.write(str(FLAGS.factor) + " " + str(wer_adv) + "\n")
+            else:
+                with open("benign.txt", "a") as text_file:
+                    text_file.write(str(FLAGS.factor) + " " + str(wer_benign) + "\n")
 
 
 

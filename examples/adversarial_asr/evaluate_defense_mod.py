@@ -21,6 +21,9 @@ flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_string('stage', "stage2", 'which stage to test or defense')
 flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
+flags.DEFINE_integer('factor', '0',
+                     'stan dev and mean multiplier')
+
 
 FLAGS = flags.FLAGS
 
@@ -119,61 +122,57 @@ def main(argv):
                 decoded_outputs = task.Decode(inputs)
                 dec_metrics_dict = task.CreateDecoderMetrics()
 
-                initial_constant = 0.0
+                initial_constant = 0.00
                 final_constant = 1.0
                 increment = 0.05
 
                 all_adv = []
                 all_benign = []
 
-                for factor in np.arange(initial_constant,final_constant,increment):
-                    print(factor)
-                    apply_defense_mod.save_audios(factor)
-                    correct = 0
-                    wer_adv = 0
-                    wer_benign = 0
-                    num_loops = 1
-                    for l in range(num_loops):
-                        for x in range(2):
-                            data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                            audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size,x)
-                            feed_dict = {input_tf: audios_np,
-                                         sample_rate_tf: sample_rate,
-                                         tgt_tf: tgt_np,
-                                         mask_tf: mask_freq}
+                apply_defense_mod.save_audios(FLAGS.factor)
+                correct = 0
+                wer_adv = 0
+                wer_benign = 0
+                num_loops = 1
+                for l in range(num_loops):
+                    for x in range(2):
+                        data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+                        audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size,x)
+                        feed_dict = {input_tf: audios_np,
+                                     sample_rate_tf: sample_rate,
+                                     tgt_tf: tgt_np,
+                                     mask_tf: mask_freq}
 
-                            losses = sess.run(loss, feed_dict)
-                            predictions = sess.run(decoded_outputs, feed_dict)
+                        losses = sess.run(loss, feed_dict)
+                        predictions = sess.run(decoded_outputs, feed_dict)
 
-                            task.PostProcessDecodeOut(predictions, dec_metrics_dict)
-                            wer_value = dec_metrics_dict['wer'].value * 100.
+                        task.PostProcessDecodeOut(predictions, dec_metrics_dict)
+                        wer_value = dec_metrics_dict['wer'].value * 100.
 
-                            for i in range(batch_size):
-                                print("pred:{}".format(predictions['topk_decoded'][i, 0]))
-                                print("targ:{}".format(tgt_np[i].lower()))
-                                print("true: {}".format(data_sub[1, i].lower()))
+                        for i in range(batch_size):
+                            print("pred:{}".format(predictions['topk_decoded'][i, 0]))
+                            print("targ:{}".format(tgt_np[i].lower()))
+                            print("true: {}".format(data_sub[1, i].lower()))
 
-                                if predictions['topk_decoded'][i, 0] == tgt_np[i].lower():
-                                    correct += 1
-                                    print("------------------------------")
-                                    print("example {} succeeds".format(i))
+                            if predictions['topk_decoded'][i, 0] == tgt_np[i].lower():
+                                correct += 1
+                                print("------------------------------")
+                                print("example {} succeeds".format(i))
 
-                            print("Now, the WER is: {0:.2f}%".format(wer_value))
-                            if x == 0:
-                                wer_adv = wer_value
-                            else:
-                                wer_benign = wer_value
-                        print("num of examples succeed: {}".format(correct))
-                        print("success rate: {}%".format(correct / float(num) * 100))
-                        print('Adv WER = ',wer_adv)
-                        print('Benign WER', wer_benign)
+                        print("Now, the WER is: {0:.2f}%".format(wer_value))
+                        if x == 0:
+                            wer_adv = wer_value
+                        else:
+                            wer_benign = wer_value
+                    print("num of examples succeed: {}".format(correct))
+                    print("success rate: {}%".format(correct / float(num) * 100))
+                    print('Adv WER = ',wer_adv)
+                    print('Benign WER', wer_benign)
 
-                    with open("data.txt", "a") as text_file:
-                        text_file.write(str(wer_adv) + " " + str(wer_benign) + "\n")
-                    all_adv.append(wer_adv)
-                    all_benign.append(wer_benign)
-                print('Adversarial WER: ', wer_adv)
-                print('Benign WER: ', wer_benign)
+                with open("data.txt", "a") as text_file:
+                    text_file.write(str(FLAGS.factor) + " " + str(wer_adv) + " " + str(wer_benign) + "\n")
+
+
 
 if __name__ == '__main__':
     app.run(main)

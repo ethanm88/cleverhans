@@ -73,7 +73,7 @@ def ReadFromWav(data, batch_size):
             audio_np = audio_temp
 
         length = len(audio_np)
-        
+
         audios.append(audio_np)
         lengths.append(length)
 
@@ -229,7 +229,7 @@ def main(argv):
                 time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
                 #wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype=float))
 
-                final_time_series = time_series*0.5 + time_series1*0.5
+                final_time_series = time_series + time_series1
                 final_np = np.array(final_time_series, dtype='int16')
 
                 final_time_series = final_time_series/ 32768.

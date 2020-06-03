@@ -21,7 +21,7 @@ flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_string('stage', "stage2", 'which stage to test or defense')
 flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
-flags.DEFINE_integer('factor', '0',
+flags.DEFINE_float('factor', '0.0',
                      'stan dev and mean multiplier')
 
 

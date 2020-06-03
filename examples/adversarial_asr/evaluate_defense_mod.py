@@ -169,7 +169,7 @@ def main(argv):
                         print('Benign WER', wer_benign)
 
                     with open("data.txt", "a") as text_file:
-                        text_file.write(str(wer_adv) + " " + str(wer_benign))
+                        text_file.write(str(wer_adv) + " " + str(wer_benign) + "\n")
                     all_adv.append(wer_adv)
                     all_benign.append(wer_benign)
                 print('Adversarial WER: ', wer_adv)

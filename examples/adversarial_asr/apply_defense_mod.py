@@ -117,6 +117,7 @@ def applyDefense(batch_size, th_batch, audios_stft, factor):
 
             temp1.append(temp2)
         noisy.append(temp1)
+    print(noisy)
     return noisy
 
 
@@ -238,9 +239,9 @@ def save_audios(factor):
                 else:
                     name, _ = data_sub[0, k].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_benign.wav"
-
+                    wav.write(saved_name, sample_rate, final_time_series)
                 print(saved_name)
-                wav.write(saved_name, sample_rate, final_time_series)
+
                 #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
 
     return 0

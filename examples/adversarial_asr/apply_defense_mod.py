@@ -59,10 +59,12 @@ def ReadFromWav(data, batch_size):
     lengths = []
     th_batch = []
     psd_max_batch = []
+    raw_audio = []
 
     # read the .wav file
     for i in range(batch_size):
         sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))
+        raw_audio.append(audio_temp)
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:
             audio_np = audio_temp * 32768
@@ -99,25 +101,28 @@ def ReadFromWav(data, batch_size):
     # read the transcription
     trans = data[2, :]
 
-    return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
+    return raw_audio, audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 
 def applyDefense(batch_size, th_batch, audios_stft, factor):
     noisy = []
     # noisy = [[[0]*1025]*305]*batch_size
     #  for i in range(batch_size):
+    factor = float(factor)
+    actual_fac = float(pow(10.0, factor))
     for i in range(batch_size):
         temp1 = []
         for j in range(len(th_batch[i])):
             temp2 = []
             for k in range(len(th_batch[i][j])):
-                sd = th_batch[i][j][k] *factor  # changed
-                mean = th_batch[i][j][k] *factor*3
-                temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k]))
+                sd = th_batch[i][j][k] *actual_fac  # changed
+                mean = th_batch[i][j][k] *actual_fac*3
+                #temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k])) max was th
+                temp2.append((max(np.random.normal(mean, sd, 1)[0], 0)))
+
 
             temp1.append(temp2)
         noisy.append(temp1)
-    print(noisy)
     return noisy
 
 
@@ -198,7 +203,15 @@ def save_audios(factor):
 
     num_loops = 1
     for l in range(num_loops):
+        benign_time_series = []
+        adv_time_series = []
         for x in range(2): # apply to defense to both benign (1) and adv example (0)
+
+            if FLAGS.adv and (x == 1):
+                continue
+            elif (FLAGS.adv == False) and x == 0:
+                continue
+
 
             data_sub = data[:, l * batch_size:(l + 1) * batch_size]
             data_new = copy.deepcopy(data_sub)
@@ -209,28 +222,49 @@ def save_audios(factor):
 
 
 
-            audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
+            raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
             psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
 
             audio_stft = []
+            ori = 0
+            final = 0
             for i in range(batch_size):
                 audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
+                ori = ((librosa.core.stft(audios[i], center=False)))
             noisy = applyDefense(batch_size, psd_threshold, audio_stft, factor)
 
             for k in range(batch_size):
                 phase = []
                 phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
-
+                #time_series = np.zeros([batch_size, max_length])
                 time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
+                #time_series = time_series[: lengths[k]]
+                time_series = numpy.array(time_series)
+                time_series.resize(lengths[k], refcheck=False)
                 #wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype='int16'))
 
-                time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
+                #final = np.array(getPhase(np.transpose(audio_stft[k]),phase))
+
+                #time_series1 = librosa.core.istft((librosa.core.stft(audios[k], center=False)),center=False)
+                time_series1 = raw_audio[k]
+                time_series1 = time_series1[: lengths[k]]
+                time_series1 = numpy.array(time_series1)
+                print(k)
+                print(len(time_series1), " ", len(time_series))
+                #time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
                 #wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype='int16'))
 
-                final_time_series = time_series * 0.5 + time_series1 * 0.5
+                final_time_series = time_series + time_series1
+                if x == 0:
+                    adv_time_series.append(final_time_series)
+                else:
+                    benign_time_series.append(final_time_series)
+                #final_time_series = final_time_series[:lengths[k]] #remove zero padding
 
-                final_time_series = final_time_series / 32768.
+                #final_time_series = final_time_series # adjust formatting
+                #final_time_series = final_time_series.astype('float32')
 
+                '''
                 name = ''
                 saved_name = ''
                 if x == 0:
@@ -239,12 +273,21 @@ def save_audios(factor):
                 else:
                     name, _ = data_sub[0, k].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_benign.wav"
-                    wav.write(saved_name, sample_rate, final_time_series)
+                    wav.write(saved_name, 16000, np.array(final_time_series))
                 print(saved_name)
 
-                #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
+                sam, audiofile = wav.read(saved_name)
+                sam1, audiofile2 = wav.read(FLAGS.root_dir + str(name) + "_stage2.wav")
 
-    return 0
+
+                for y in range(len(audiofile)):
+                    if abs(audiofile[y]-audiofile2[y])>0.0000001:
+                       print(y, ' ',final_time_series[y], ' ',audiofile[y], ' ',audiofile2[y], '\n')
+                print('hello')
+                #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
+                '''
+
+    return adv_time_series, benign_time_series
 
 
 

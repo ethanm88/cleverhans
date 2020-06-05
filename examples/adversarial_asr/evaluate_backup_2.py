@@ -90,59 +90,58 @@ def main(argv):
     num_loops = num / batch_size
     assert num % batch_size == 0
 
-    initial_constant = 0.00
-    final_constant = 0.25
-    increment = 0.01
+    with tf.device("/gpu:0"):
 
-    all_adv = []
-    all_benign = []
-    for factor in np.arange(initial_constant, final_constant, increment):
-        print(factor)
-        with tf.device("/gpu:0"):
+        tf.set_random_seed(1234)
+        tfconf = tf.ConfigProto(allow_soft_placement=True)
+        with tf.Session(config=tfconf) as sess:
+            params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
+            params.cluster.worker.gpus_per_replica = 1
+            cluster = cluster_factory.Cluster(params.cluster)
+            with cluster, tf.device(cluster.GetPlacer()):
+                params.vn.global_vn = False
+                params.random_seed = 1234
+                params.is_eval = True
+                model = params.cls(params)
+                task = model.GetTask()
+                saver = tf.train.Saver()
+                saver.restore(sess, FLAGS.checkpoint)
 
-            tf.set_random_seed(1234)
-            tfconf = tf.ConfigProto(allow_soft_placement=True)
-            with tf.Session(config=tfconf) as sess:
-                params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
-                params.cluster.worker.gpus_per_replica = 1
-                cluster = cluster_factory.Cluster(params.cluster)
-                with cluster, tf.device(cluster.GetPlacer()):
-                    params.vn.global_vn = False
-                    params.random_seed = 1234
-                    params.is_eval = True
-                    model = params.cls(params)
-                    task = model.GetTask()
-                    saver = tf.train.Saver()
-                    saver.restore(sess, FLAGS.checkpoint)
+                # define the placeholders
+                input_tf = tf.placeholder(tf.float32, shape=[batch_size, None])
+                tgt_tf = tf.placeholder(tf.string)
+                sample_rate_tf = tf.placeholder(tf.int32)
+                mask_tf = tf.placeholder(tf.float32, shape=[batch_size, None, 80])
 
-                    # define the placeholders
-                    input_tf = tf.placeholder(tf.float32, shape=[batch_size, None])
-                    tgt_tf = tf.placeholder(tf.string)
-                    sample_rate_tf = tf.placeholder(tf.int32)
-                    mask_tf = tf.placeholder(tf.float32, shape=[batch_size, None, 80])
+                # generate the features and inputs
+                features = create_features(input_tf, sample_rate_tf, mask_tf)
+                shape = tf.shape(features)
+                inputs = create_inputs(model, features, tgt_tf, batch_size, mask_tf)
 
-                    # generate the features and inputs
-                    features = create_features(input_tf, sample_rate_tf, mask_tf)
-                    shape = tf.shape(features)
-                    inputs = create_inputs(model, features, tgt_tf, batch_size, mask_tf)
+                # loss
+                metrics = task.FPropDefaultTheta(inputs)
+                loss = tf.get_collection("per_loss")[0]
 
-                    # loss
-                    metrics = task.FPropDefaultTheta(inputs)
-                    loss = tf.get_collection("per_loss")[0]
+                # prediction
+                decoded_outputs = task.Decode(inputs)
+                dec_metrics_dict = task.CreateDecoderMetrics()
 
-                    # prediction
-                    decoded_outputs = task.Decode(inputs)
-                    dec_metrics_dict = task.CreateDecoderMetrics()
+                initial_constant = 0.00
+                final_constant = 1.0
+                increment = 0.01
 
+                all_adv = []
+                all_benign = []
 
 
-
-                    correct = 0
-                    wer_adv = 0
-                    wer_benign = 0
-                    num_loops = 1
-                    all_adv = []
-                    all_benign = []
+                correct = 0
+                wer_adv = 0
+                wer_benign = 0
+                num_loops = 1
+                all_adv = []
+                all_benign = []
+                for factor in np.arange(initial_constant, final_constant, increment):
+                    print(factor)
                     for l in range(num_loops):
                         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
                         audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size, factor)
@@ -186,8 +185,8 @@ def main(argv):
                             text_file.write(str(wer_benign) + " ,")
                     print("num of examples succeed: {}".format(correct))
                     print("success rate: {}%".format(correct / float(num) * 100))
-                    print('All Adversarial WER: ', all_adv)
-                    print('All Benign WER: ', all_benign)
+                print('All Adversarial WER: ', all_adv)
+                print('All Benign WER: ', all_benign)
 
 
 

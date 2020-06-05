@@ -15,32 +15,29 @@ from absl import app
 import scipy
 import random
 from pydub import AudioSegment
-import apply_defense_mod
 import copy
 
 
 # data directory
-#flags.DEFINE_string("root_dir", "./", "location of Librispeech")
-flags.DEFINE_string('input', 'read_data.txt',
-                    'Input audio .wav file(s), at 16KHz (separated by spaces)')
+flags.DEFINE_string("root_dir", "./", "location of Librispeech")
+
 
 # data processing
-#flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
-#flags.DEFINE_integer('max_length_dataset', '223200','the length of the longest audio in the whole dataset')
-#flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversarial perturbation')
+flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
+flags.DEFINE_integer('max_length_dataset', '223200',
+                     'the length of the longest audio in the whole dataset')
+flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversarial perturbation')
 
 # training parameters
-flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
-                    'location of checkpoint')
-flags.DEFINE_integer('batch_size', '5', 'batch size')
-#flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
-#flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
-#flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
-#flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
-#flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
+
+
+flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
+flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
+flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
+flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
+flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
 FLAGS = flags.FLAGS
-
 
 
 
@@ -62,11 +59,12 @@ def ReadFromWav(data, batch_size):
     lengths = []
     th_batch = []
     psd_max_batch = []
+    raw_audio = []
 
     # read the .wav file
     for i in range(batch_size):
         sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))
-
+        raw_audio.append(audio_temp)
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:
             audio_np = audio_temp * 32768
@@ -103,10 +101,10 @@ def ReadFromWav(data, batch_size):
     # read the transcription
     trans = data[2, :]
 
-    return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
+    return raw_audio, audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 
-def applyDefense(batch_size, th_batch, audios_stft):
+def applyDefense(batch_size, th_batch, audios_stft, factor):
     noisy = []
     # noisy = [[[0]*1025]*305]*batch_size
     #  for i in range(batch_size):
@@ -115,9 +113,11 @@ def applyDefense(batch_size, th_batch, audios_stft):
         for j in range(len(th_batch[i])):
             temp2 = []
             for k in range(len(th_batch[i][j])):
-                sd = 0 #th_batch[i][j][k]/6  # changed
-                mean = 0
-                temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k]))
+                sd = th_batch[i][j][k] *factor  # changed
+                mean = th_batch[i][j][k] *factor*3
+                #temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k])) max was th
+                temp2.append((max(np.random.normal(mean, sd, 1)[0], 0)))
+
 
             temp1.append(temp2)
         noisy.append(temp1)
@@ -191,9 +191,7 @@ def overlawAudio(file1, file2, final_file_name):
     combined.export(final_file_name, format='wav')
     return 'finished'
 
-def main(argv):
-    apply_defense_mod.save_audios(2.5)
-    '''
+def save_audios(factor):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
     num = len(data[0])
@@ -203,6 +201,8 @@ def main(argv):
 
     num_loops = 1
     for l in range(num_loops):
+        benign_time_series = []
+        adv_time_series = []
         for x in range(2): # apply to defense to both benign (1) and adv example (0)
 
             data_sub = data[:, l * batch_size:(l + 1) * batch_size]
@@ -214,62 +214,73 @@ def main(argv):
 
 
 
-            audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
+            raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
             psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
 
             audio_stft = []
+            ori = 0
+            final = 0
             for i in range(batch_size):
                 audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
-            noisy = applyDefense(batch_size, psd_threshold, audio_stft)
+                ori = ((librosa.core.stft(audios[i], center=False)))
+            noisy = applyDefense(batch_size, psd_threshold, audio_stft, factor)
 
             for k in range(batch_size):
                 phase = []
                 phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
-
+                #time_series = np.zeros([batch_size, max_length])
                 time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
-                #print(numpy.array(time_series, dtype=float))
-                #wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype=float))
+                #time_series = time_series[: lengths[k]]
+                time_series = numpy.array(time_series)
+                time_series.resize(lengths[k], refcheck=False)
+                #wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype='int16'))
 
-                time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
-                #wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype=float))
+                #final = np.array(getPhase(np.transpose(audio_stft[k]),phase))
 
-                final_time_series = time_series1 + time_series
-                final_np = np.array(final_time_series, dtype='int16')
+                #time_series1 = librosa.core.istft((librosa.core.stft(audios[k], center=False)),center=False)
+                time_series1 = raw_audio[k]
+                time_series1 = time_series1[: lengths[k]]
+                time_series1 = numpy.array(time_series1)
+                print(k)
+                print(len(time_series1), " ", len(time_series))
+                #time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
+                #wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype='int16'))
 
-                final_time_series = final_time_series/ 32768.
-                #final_np_2 = numpy.array(final_time_series, dtype='int16')
-                final_time_series = final_time_series[:lengths[k]]
-                final_np_2 = np.copy(final_time_series)
-                final_np_2 = final_np_2.astype('float32')
+                final_time_series = time_series + time_series1
+                if x == 0:
+                    adv_time_series.append(final_time_series)
+                else:
+                    benign_time_series.append(final_time_series)
+                #final_time_series = final_time_series[:lengths[k]] #remove zero padding
 
+                #final_time_series = final_time_series # adjust formatting
+                #final_time_series = final_time_series.astype('float32')
+
+                '''
                 name = ''
                 saved_name = ''
-                saved_name_2 = ''
                 if x == 0:
                     name, _ = data_sub[0, k].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_defense.wav"
-                    saved_name_2 = FLAGS.root_dir + str(name) + "_defense_2.wav"
                 else:
                     name, _ = data_sub[0, k].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_benign.wav"
-                    saved_name_2 = FLAGS.root_dir + str(name) + "_benign_2.wav"
-
-
+                    wav.write(saved_name, 16000, np.array(final_time_series))
                 print(saved_name)
-                #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
-                wav.write(saved_name, sample_rate,final_time_series)
-                wav.write(saved_name_2, sample_rate,final_np_2)
 
                 sam, audiofile = wav.read(saved_name)
-                sam1, audiofile2 = wav.read(FLAGS.root_dir + str(name)+"_stage2.wav")
+                sam1, audiofile2 = wav.read(FLAGS.root_dir + str(name) + "_stage2.wav")
+
+
+                for y in range(len(audiofile)):
+                    if abs(audiofile[y]-audiofile2[y])>0.0000001:
+                       print(y, ' ',final_time_series[y], ' ',audiofile[y], ' ',audiofile2[y], '\n')
                 print('hello')
-    '''
-    return 0
+                #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
+                '''
+
+    return adv_time_series, benign_time_series
 
 
-
-
-if __name__ == '__main__':
-    app.run(main)
 
 

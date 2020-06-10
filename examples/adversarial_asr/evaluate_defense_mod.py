@@ -140,7 +140,7 @@ def main(argv):
                 correct = 0
                 wer_adv = 0
                 wer_benign = 0
-                num_loops = 1
+                #num_loops = 1
                 print("Factor: " + str(FLAGS.factor))
                 for l in range(num_loops):
                     data_sub = data[:, l * batch_size:(l + 1) * batch_size]

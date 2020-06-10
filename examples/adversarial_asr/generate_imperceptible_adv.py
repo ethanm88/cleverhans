@@ -389,6 +389,7 @@ def main(argv):
                             num_iter_stage2=FLAGS.num_iter_stage2)
 
             for l in range(num_loops):
+                l = 1 # changed to only generate second half of examples
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size] 
                                
                 # stage 1

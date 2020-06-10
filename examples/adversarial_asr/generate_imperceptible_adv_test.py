@@ -167,7 +167,7 @@ def graphs(audio_stft, noisy, freqs, th_batch_sorted, ATH_batch, psd_threshold, 
     #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(th_batch_sorted[sample_num][bin_num]), label = 'Masking Threshold')
     plt.legend()
     plt.xlabel('Frequency (hz)', fontsize=14)
-    plt.ylabel('Amplitude', fontsize=14)
+    plt.ylabel('Sound Pressure Level (dB)', fontsize=14)
     #plt.legend(handles=[line_one, line_two, line_three])
     axes = plt.gca()
 

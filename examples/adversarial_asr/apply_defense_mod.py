@@ -264,28 +264,7 @@ def save_audios(factor):
                 #final_time_series = final_time_series # adjust formatting
                 #final_time_series = final_time_series.astype('float32')
 
-                '''
-                name = ''
-                saved_name = ''
-                if x == 0:
-                    name, _ = data_sub[0, k].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_defense.wav"
-                else:
-                    name, _ = data_sub[0, k].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_benign.wav"
-                    wav.write(saved_name, 16000, np.array(final_time_series))
-                print(saved_name)
 
-                sam, audiofile = wav.read(saved_name)
-                sam1, audiofile2 = wav.read(FLAGS.root_dir + str(name) + "_stage2.wav")
-
-
-                for y in range(len(audiofile)):
-                    if abs(audiofile[y]-audiofile2[y])>0.0000001:
-                       print(y, ' ',final_time_series[y], ' ',audiofile[y], ' ',audiofile2[y], '\n')
-                print('hello')
-                #overlawAudio('original.wav','defensive_perturbation.wav', saved_name)
-                '''
 
     return adv_time_series, benign_time_series
 

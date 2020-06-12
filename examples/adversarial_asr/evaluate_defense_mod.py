@@ -23,7 +23,7 @@ flags.DEFINE_string('stage', "stage2", 'which stage to test or defense')
 flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
 flags.DEFINE_float('factor', '0.0',
                      'stan dev and mean multiplier')
-flags.DEFINE_boolean('revert', 'True', 'to test reversion for adv ex')
+flags.DEFINE_boolean('revert', 'False', 'to test reversion for adv ex')
 
 
 FLAGS = flags.FLAGS
@@ -45,11 +45,11 @@ def Read_input(data, batch_size): # 0 = adv 1 = benign
         name, _ = data[0, i].split(".")
         if FLAGS.adv:
             audio_temp = adv_time_series[i]
-            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_defense" + ".wav")
+            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_stage2" + ".wav")
             #print("./" + str(name) + "_defense" + ".wav")evaluate_defense_mod.py
         else:
             audio_temp = benign_time_series[i]
-            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_benign" + ".wav")
+            sample_rate_np, audio_temp1 = wav.read("./" + str(name)  + ".wav")
 
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:

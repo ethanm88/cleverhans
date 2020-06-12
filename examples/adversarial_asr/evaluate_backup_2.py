@@ -1,197 +1,274 @@
-import tensorflow as tf
-from lingvo import model_imports
-from lingvo import model_registry
+import librosa as librosa
+# import tensorflow as tf
+# from lingvo import model_imports
+# from lingvo import model_registry
+import numpy
 import numpy as np
+import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
-from tool import create_features, create_inputs
+# from tool import Transform, create_features, create_inputs
 import time
-from lingvo.core import cluster_factory
+# from lingvo.core import cluster_factory
 from absl import flags
-import apply_defense_mod
-
-
 from absl import app
+import scipy
+import random
+from pydub import AudioSegment
+import copy
 
-flags.DEFINE_string('input', 'read_data.txt',
-                    'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
-flags.DEFINE_integer('batch_size', '5',
-                     'batch_size to do the testing')
-flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
-                    'location of checkpoint')
-flags.DEFINE_string('stage', "stage2", 'which stage to test or defense')
-flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
-flags.DEFINE_float('factor', '0.0',
-                     'stan dev and mean multiplier')
 
+# data directory
+flags.DEFINE_string("root_dir", "./", "location of Librispeech")
+
+
+# data processing
+flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
+flags.DEFINE_integer('max_length_dataset', '223200',
+                     'the length of the longest audio in the whole dataset')
+flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversarial perturbation')
+
+# training parameters
+
+
+flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
+flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
+flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
+flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
+flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
 FLAGS = flags.FLAGS
 
 
-def Read_input(data, batch_size, factor): # 0 = adv 1 = benign
+
+
+def ReadFromWav(data, batch_size):
     """
     Returns:
         audios_np: a numpy array of size (batch_size, max_length) in float
-        sample_rate: a numpy array
-        trans: an array includes the targeted transcriptions (batch_size,)
-        masks_freq: a numpy array to mask out the padding features in frequency domain
+        trans: a numpy array includes the targeted transcriptions (batch_size, )
+        th_batch: a numpy array of the masking threshold, each of size (?, 1025)
+        psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
+        max_length: the max length of the batch of audios
+        sample_rate_np: a numpy array
+        masks: a numpy array of size (batch_size, max_length)
+        masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
+        lengths: a list of the length of original audios
     """
-    adv_time_series, benign_time_series = apply_defense_mod.save_audios(factor)
     audios = []
     lengths = []
+    th_batch = []
+    psd_max_batch = []
+    raw_audio = []
 
+    # read the .wav file
     for i in range(batch_size):
-        name, _ = data[0, i].split(".")
-        if FLAGS.adv:
-            audio_temp = adv_time_series[i]
-            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_defense" + ".wav")
-            #print("./" + str(name) + "_defense" + ".wav")
-        else:
-            audio_temp = benign_time_series[i]
-            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_benign" + ".wav")
-
+        sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))
+        raw_audio.append(audio_temp)
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:
             audio_np = audio_temp * 32768
-
         else:
             audio_np = audio_temp
+
         length = len(audio_np)
 
         audios.append(audio_np)
         lengths.append(length)
 
     max_length = max(lengths)
+
+    # pad the input audio
+    audios_np = np.zeros([batch_size, max_length])
+    masks = np.zeros([batch_size, max_length])
     lengths_freq = (np.array(lengths) // 2 + 1) // 240 * 3
     max_length_freq = max(lengths_freq)
     masks_freq = np.zeros([batch_size, max_length_freq, 80])
-
-    # combine the audios into one array
-    audios_np = np.zeros([batch_size, max_length])
-
     for i in range(batch_size):
-        audios_np[i, :lengths[i]] = audios[i]
+        audio_float = audios[i].astype(float)
+        audios_np[i, :lengths[i]] = audio_float
+        masks[i, :lengths[i]] = 1
         masks_freq[i, :lengths_freq[i], :] = 1
 
-    audios_np = audios_np.astype(float)
-    if FLAGS.adv:
-        trans = data[2, :]
-    else:
-        trans = data[1, :]
+        # compute the masking threshold
+        th, psd_max = generate_mask.generate_th(audios_np[i], sample_rate_np, FLAGS.window_size)
+        th_batch.append(th)
+        psd_max_batch.append(psd_max)
 
-    return audios_np, sample_rate_np, trans, masks_freq
+    th_batch = np.array(th_batch)
+    psd_max_batch = np.array(psd_max_batch)
+
+    # read the transcription
+    trans = data[2, :]
+
+    return raw_audio, audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 
-def main(argv):
+def applyDefense(batch_size, th_batch, audios_stft, factor):
+    noisy = []
+    # noisy = [[[0]*1025]*305]*batch_size
+    #  for i in range(batch_size):
+    factor = float(factor)
+    actual_fac = float(pow(10.0, factor))
+    for i in range(batch_size):
+        temp1 = []
+        for j in range(len(th_batch[i])):
+            temp2 = []
+            for k in range(len(th_batch[i][j])):
+                sd = th_batch[i][j][k] *actual_fac  # changed
+                mean = th_batch[i][j][k] *actual_fac*3
+                #temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k])) max was th
+                temp2.append((max(np.random.normal(mean, sd, 1)[0], 0)))
+
+
+            temp1.append(temp2)
+        noisy.append(temp1)
+    return noisy
+
+
+def thresholdPSD(batch_size, th_batch, audios, window_size):
+    psd_threshold_batch = []
+    for i in range(batch_size):
+        win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
+        z = abs(win / window_size)
+        psd_max = np.max(z * z)
+
+        psd_threshold = np.sqrt(3.0 / 8.) * float(window_size) * np.sqrt(
+            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
+        psd_threshold_batch.append(psd_threshold)
+    return psd_threshold_batch
+
+
+def getFreqDomain(batch_size, audios, ATH_batch, sample_rate, th_batch, psd_threshold, num_bins):
+    audio_stft = []
+    freqs = [[[0] * 1025] * 305] * 5
+    for i in range(batch_size):
+        audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
+        for j in range(num_bins):
+            freqs[i][j] = ((np.fft.fftfreq(len(audio_stft[i][j]), d=(1 / sample_rate))))
+            # freqs[i][j] = librosa.core.fft_frequencies(sample_rate, len(audio_stft[i][j]))
+
+    noisy = applyDefense(batch_size, psd_threshold, audio_stft)
+    for i in range(batch_size):
+        ATH_batch[i] = pow(10, ATH_batch[i] / 10.)
+        ATH_batch[i] = [x for _, x in sorted(zip(freqs[i][0], ATH_batch[i]))]
+        for j in range(num_bins):
+            audio_stft[i][j] = [x for _, x in sorted(zip(freqs[i][j], audio_stft[i][j]))]
+            th_batch[i][j] = [x for _, x in sorted(zip(freqs[i][j], th_batch[i][j]))]
+            psd_threshold[i][j] = [x for _, x in sorted(zip(freqs[i][j], psd_threshold[i][j]))]
+            noisy[i][j] = [x for _, x in sorted(zip(freqs[i][j], noisy[i][j]))]
+            freqs[i][j].sort()
+
+    return audio_stft, noisy, freqs, th_batch, ATH_batch, psd_threshold
+
+
+'''
+def FeedForward (audios, sample_rate, mask_freq): #not finished
+    pass_in = tf.clip_by_value(audios, -2 ** 15, 2 ** 15 - 1)
+    features = create_features(pass_in, sample_rate, mask_freq) #I think we need to modify create_features method
+    inputs = create_inputs(model, features, self.tgt_tf, self.batch_size, self.mask_freq)
+'''
+
+
+def getPhase(radii, angles):
+    return radii * numpy.exp(1j * angles)
+
+
+def randomPhase(angles):
+    randomized_angles = []
+    for i in range(len(angles)):
+        cur_angles = []
+        for j in range(len(angles[0])):
+            # x = min(angles[i][j]*random.random()*2,2*np.pi)
+            cur_angles.append(2 * np.pi * random.random())
+        randomized_angles.append(cur_angles)
+    return np.array(randomized_angles)
+
+def overlawAudio(file1, file2, final_file_name):
+    sound1 = AudioSegment.from_file(file1)
+    sound2 = AudioSegment.from_file(file2)
+
+    combined = sound1.overlay(sound2)
+
+    combined.export(final_file_name, format='wav')
+    return 'finished'
+
+def save_audios(factor):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
-    # calculate the number of loops to run the test
+    data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
     num = len(data[0])
     batch_size = FLAGS.batch_size
-    num_loops = num / batch_size
+    num_loops = round(num / batch_size)
     assert num % batch_size == 0
 
-    with tf.device("/gpu:0"):
+    num_loops = 1
+    for l in range(num_loops):
+        l = l+1
+        benign_time_series = []
+        adv_time_series = []
+        for x in range(2): # apply to defense to both benign (1) and adv example (0)
 
-        tf.set_random_seed(1234)
-        tfconf = tf.ConfigProto(allow_soft_placement=True)
-        with tf.Session(config=tfconf) as sess:
-            params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
-            params.cluster.worker.gpus_per_replica = 1
-            cluster = cluster_factory.Cluster(params.cluster)
-            with cluster, tf.device(cluster.GetPlacer()):
-                params.vn.global_vn = False
-                params.random_seed = 1234
-                params.is_eval = True
-                model = params.cls(params)
-                task = model.GetTask()
-                saver = tf.train.Saver()
-                saver.restore(sess, FLAGS.checkpoint)
-
-                # define the placeholders
-                input_tf = tf.placeholder(tf.float32, shape=[batch_size, None])
-                tgt_tf = tf.placeholder(tf.string)
-                sample_rate_tf = tf.placeholder(tf.int32)
-                mask_tf = tf.placeholder(tf.float32, shape=[batch_size, None, 80])
-
-                # generate the features and inputs
-                features = create_features(input_tf, sample_rate_tf, mask_tf)
-                shape = tf.shape(features)
-                inputs = create_inputs(model, features, tgt_tf, batch_size, mask_tf)
-
-                # loss
-                metrics = task.FPropDefaultTheta(inputs)
-                loss = tf.get_collection("per_loss")[0]
-
-                # prediction
-                decoded_outputs = task.Decode(inputs)
-                dec_metrics_dict = task.CreateDecoderMetrics()
-
-                initial_constant = 0.00
-                final_constant = 1.0
-                increment = 0.01
-
-                all_adv = []
-                all_benign = []
+            if FLAGS.adv and (x == 1):
+                continue
+            elif (FLAGS.adv == False) and x == 0:
+                continue
 
 
-                correct = 0
-                wer_adv = 0
-                wer_benign = 0
-                num_loops = 1
-                all_adv = []
-                all_benign = []
-                for factor in np.arange(initial_constant, final_constant, increment):
-                    print(factor)
-                    for l in range(num_loops):
-                        data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                        audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size, factor)
-                        feed_dict = {input_tf: audios_np,
-                                     sample_rate_tf: sample_rate,
-                                     tgt_tf: tgt_np,
-                                     mask_tf: mask_freq}
+            data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+            data_new = copy.deepcopy(data_sub)
 
-                        losses = sess.run(loss, feed_dict)
-                        predictions = sess.run(decoded_outputs, feed_dict)
-
-                        task.PostProcessDecodeOut(predictions, dec_metrics_dict)
-                        wer_value = dec_metrics_dict['wer'].value * 100.
-
-                        for i in range(batch_size):
-                            print("pred:{}".format(predictions['topk_decoded'][i, 0]))
-                            print("targ:{}".format(tgt_np[i].lower()))
-                            print("true: {}".format(data_sub[1, i].lower()))
-
-                            if predictions['topk_decoded'][i, 0] == tgt_np[i].lower():
-                                correct += 1
-                                print("------------------------------")
-                                print("example {} succeeds".format(i))
-
-                        print("Now, the WER is: {0:.2f}%".format(wer_value))
-                        if FLAGS.adv:
-                            print("Type: Adversarial")
-                            wer_adv = wer_value
-                            print(wer_adv)
-                            all_adv.append(wer_adv)
-                        else:
-                            print("Type: Benign")
-                            wer_benign = wer_value
-                            print(wer_benign)
-                            all_benign.append(wer_benign)
-                    if FLAGS.adv: # change when have more loops
-                        with open("adv.txt", "a") as text_file:
-                            text_file.write(str(wer_adv) + " ,")
-                    else:
-                        with open("benign.txt", "a") as text_file:
-                            text_file.write(str(wer_benign) + " ,")
-                    print("num of examples succeed: {}".format(correct))
-                    print("success rate: {}%".format(correct / float(num) * 100))
-                print('All Adversarial WER: ', all_adv)
-                print('All Benign WER: ', all_benign)
+            if x == 0:
+                for m in range(batch_size):
+                    data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_stage2' + '.wav'
 
 
 
+            raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
+            psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
+
+            audio_stft = []
+            ori = 0
+            final = 0
+            for i in range(batch_size):
+                audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
+                ori = ((librosa.core.stft(audios[i], center=False)))
+            noisy = applyDefense(batch_size, psd_threshold, audio_stft, factor)
+
+            for k in range(batch_size):
+                phase = []
+                phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
+                #time_series = np.zeros([batch_size, max_length])
+                time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
+                #time_series = time_series[: lengths[k]]
+                time_series = numpy.array(time_series)
+                time_series.resize(lengths[k], refcheck=False)
+                #wav.write('defensive_perturbation.wav', sample_rate,numpy.array(time_series, dtype='int16'))
+
+                #final = np.array(getPhase(np.transpose(audio_stft[k]),phase))
+
+                #time_series1 = librosa.core.istft((librosa.core.stft(audios[k], center=False)),center=False)
+                time_series1 = raw_audio[k]
+                time_series1 = time_series1[: lengths[k]]
+                time_series1 = numpy.array(time_series1)
+                print(k)
+                print(len(time_series1), " ", len(time_series))
+                #time_series1 = librosa.core.istft(np.array(getPhase(np.transpose(audio_stft[k]),phase)),center=False)
+                #wav.write('original.wav', sample_rate,numpy.array(time_series1, dtype='int16'))
+
+                final_time_series = time_series + time_series1
+                if x == 0:
+                    adv_time_series.append(final_time_series)
+                else:
+                    benign_time_series.append(final_time_series)
+                #final_time_series = final_time_series[:lengths[k]] #remove zero padding
+
+                #final_time_series = final_time_series # adjust formatting
+                #final_time_series = final_time_series.astype('float32')
 
 
-if __name__ == '__main__':
-    app.run(main)
+
+    return adv_time_series, benign_time_series
+
+
+
 

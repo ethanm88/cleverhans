@@ -45,11 +45,11 @@ def Read_input(data, batch_size, factor): # 0 = adv 1 = benign
         name, _ = data[0, i].split(".")
         if FLAGS.adv:
             audio_temp = adv_time_series[i]
-            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_defense" + ".wav")
+            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_stage2" + ".wav")
             #print("./" + str(name) + "_defense" + ".wav")
         else:
             audio_temp = benign_time_series[i]
-            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + "_benign" + ".wav")
+            sample_rate_np, audio_temp1 = wav.read("./" + str(name) + ".wav")
 
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:
@@ -144,7 +144,9 @@ def main(argv):
                     num_loops = 1
                     all_adv = []
                     all_benign = []
+                    num_loops = 1
                     for l in range(num_loops):
+                        l = l+1
                         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
                         audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size, factor)
                         feed_dict = {input_tf: audios_np,

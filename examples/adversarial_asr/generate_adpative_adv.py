@@ -111,6 +111,19 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
         psd_threshold_batch.append(psd_threshold)
     return psd_threshold_batch
 
+def normalize_input(all_time_series, batch_size, lengths):
+    for i in range(batch_size):
+        if max(all_time_series[i]) < 1:
+             all_time_series[i] = all_time_series[i] * 32768
+        else:
+            all_time_series[i] = all_time_series[i]
+
+    max_length = max(lengths)
+    audios_np = np.zeros([batch_size, max_length])
+    for i in range(batch_size):
+        audio_float = all_time_series[i].astype(float)
+        audios_np[i, :lengths[i]] = audio_float
+    return audios_np
 
 def apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, raw_audio):
     # calculate normalized threshold
@@ -160,7 +173,7 @@ def apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, 
         final_time_series = np.array(time_series_original + time_series_noisy)
         all_time_series.append(final_time_series.tolist())
     all_time_series = np.array([np.array(i) for i in all_time_series])
-    return all_time_series
+    return normalize_input(all_time_series,batch_size, lengths)
 
 
 class Attack:

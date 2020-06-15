@@ -33,6 +33,8 @@ flags.DEFINE_string('input', 'read_data.txt',
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_integer('batch_size', '5', 'batch size')
+flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
+
 #flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
 #flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 #flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
@@ -192,7 +194,7 @@ def overlawAudio(file1, file2, final_file_name):
     return 'finished'
 
 def main(argv):
-    apply_defense_mod.save_audios(2.5)
+    apply_defense_mod.save_audios(-0.77)
     '''
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]

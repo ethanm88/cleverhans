@@ -1,6 +1,25 @@
 import matplotlib.pyplot as plt
 
+def readfromfile(file_name, size):
+    all_WER = []
+    with open(file_name) as input_file:
+        for line in input_file:
+            line = line.strip()
+            for number in line.split():
+                all_WER.append(float(number))
+    avg_WER = get_averages(size, all_WER)
+    return avg_WER
+
+def get_averages(size, list):
+    avg_WER = []
+    for i in range(0, len(list), 3):
+        avg_WER.append((list[i]+list[i+1]+list[i+2])/3.0)
+    return avg_WER
+
 def main():
+    set_2_adv = readfromfile("./Results/results_adv-5-9.txt", 3)
+    set_2_benign = readfromfile("./Results/results_benign-5-9.txt", 3)
+    set_2_revert = readfromfile("./Results/results_revert-5-9.txt", 3)
     #y = [0.00, 84.33734939759, 91.0843373494, 100.24096385556, 104.09638554207, 107.10843373516, 105.6626506024,111.9277108434, 104.81927710847, 107.22891566279, 103.61445783146, 106.3855421688, 110.24096385559, 109.75903614459, 105.5421686747, 107.590361446, 104.8192771085, 102.8915662651, 101.80722891569, 101.68674698799, 100.843373494, 102.04819277109, 99.87951807229, 99.79919678715]
     #x = [0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23]
     benign = []
@@ -15,16 +34,24 @@ def main():
     k = [-9, -8.75, -8.5, -8.25, -8, -7.75, -7.5, -7.25, -7.0, -6.75, -6.5, -6.25, -6.00, -5.75, -5.50, -5.25, -5.00, -4.75, -4.5, -4.25, -4.00, -3.75, -3.50, -3.25, -3.00, -2.75, -2.50, -2.25, -2.00, -1.75, -1.50, -1.25, -1.00, -0.75, -0.5, -0.25, 0.00, 0.25, 0.50, 0.75, 1.00]
     for i in range(len(adv)):
         print(k[i], revert[i])
+    all_adv = []
+    all_benign = []
+    all_revert = []
+    for i in range(len(benign)):
+        all_adv.append((adv[i] + set_2_adv[i])/2.0)
+        all_benign.append((benign[i] + set_2_benign[i])/2.0)
+        all_revert.append((revert[i] + set_2_revert[i])/2.0)
 
-    #plt.plot(k,adv, label = 'Adversarial to Adversarial WER')
-    #plt.plot(k, benign, label='Benign to Benign WER')
-    #plt.plot(k, revert, label='Adversarial to Benign WER')
-    #plt.legend()
+
+    plt.plot(k,all_adv, label = 'Adversarial to Adversarial WER')
+    plt.plot(k, all_benign, label='Benign to Benign WER')
+    plt.plot(k, all_revert, label='Adversarial to Benign WER')
+    plt.legend()
     print(plt.gca().get_ylim(), plt.gca().get_xlim())
     plt.xlabel('log(k)', fontsize=14)
     plt.ylabel('WER (%)', fontsize=14)
-    plt.ylim([-6.927710843350001, 145.48192771035002])
-    plt.xlim([-9.5, 1.5])
+    #plt.ylim([-6.927710843350001, 145.48192771035002])
+    #plt.xlim([-9.5, 1.5])
 
     plt.show()
 

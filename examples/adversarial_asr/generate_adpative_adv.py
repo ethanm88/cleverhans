@@ -125,19 +125,18 @@ def normalize_input(all_time_series, batch_size, lengths):
         audios_np[i, :lengths[i]] = audio_float
     return audios_np
 
-def apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, raw_audio):
+def initial_audio(batch_size, th_batch, audios):
     # calculate normalized threshold
     psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
-    noisy = []
 
     # apply stft to data
-    audio_stft = []
     phase = []
     for i in range(batch_size):
-        audio_stft.append(np.transpose(abs(librosa.core.stft(audios[i], center=False))))
         phase = ((np.angle(librosa.core.stft(audios[i], center=False))))
+    return psd_threshold, phase
 
-
+def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw_audio, phase):
+    noisy = []
     # noisy = [[[0]*1025]*305]*batch_size
     #  for i in range(batch_size):
 
@@ -146,11 +145,11 @@ def apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, 
     actual_fac = float(pow(10.0, factor))
     for i in range(batch_size):
         temp1 = []
-        for j in range(len(th_batch[i])):
+        for j in range(len(psd_threshold[i])):
             temp2 = []
-            for k in range(len(th_batch[i][j])):
-                sd = th_batch[i][j][k] * actual_fac  # changed
-                mean = th_batch[i][j][k] * actual_fac * 3
+            for k in range(len(psd_threshold[i][j])):
+                sd = psd_threshold[i][j][k] * actual_fac  # changed
+                mean = psd_threshold[i][j][k] * actual_fac * 3
                 # temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k])) max was th
                 temp2.append((max(np.random.normal(mean, sd, 1)[0], 0)))
 
@@ -272,7 +271,10 @@ class Attack:
         # noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
 
-        noisy_audios = apply_defensive_perturbation(batch_size,th_batch, audios,FLAGS.factor, lengths, raw_audio)
+
+        psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
+
+        noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
         feed_dict = {self.input_tf: noisy_audios,
                      self.ori_input_tf: audios,
                      self.tgt_tf: trans,
@@ -303,7 +305,8 @@ class Attack:
         for i in range(MAX):
             now = time.time()
 
-            noisy_audios = apply_defensive_perturbation(batch_size, th_batch, audios, FLAGS.factor, lengths, raw_audio)
+            noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio,
+                                                        phase)
             feed_dict = {self.input_tf: noisy_audios,
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
@@ -327,8 +330,10 @@ class Attack:
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
-                if i % 1000 == 0:
+                if i % 50 == 0:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
+                    print("targ:{}".format(trans[ii].lower()))
+                    print("true: {}".format(data[1, ii].lower()))
                     # print("rescale: {}".format(sess.run(self.rescale[ii])))
                 if i % 10 == 0:
                     if i % 100 == 0:
@@ -380,7 +385,9 @@ class Attack:
         # noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
 
-        noisy_audios = apply_defensive_perturbation(batch_size, th_batch, audios, FLAGS.factor, lengths, raw_audio)
+        psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
+        noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
+
         feed_dict = {self.input_tf: noisy_audios,
                      self.ori_input_tf: audios,
                      self.tgt_tf: trans,
@@ -414,7 +421,7 @@ class Attack:
         for i in range(MAX):
             now = time.time()
 
-            noisy_audios = apply_defensive_perturbation(batch_size, th_batch, audios, FLAGS.factor, lengths, raw_audio)
+            noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
             feed_dict = {self.input_tf: noisy_audios,
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
@@ -453,8 +460,10 @@ class Attack:
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
-                if i % 1000 == 0:
+                if i % 50 == 0:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
+                    print("targ:{}".format(trans[ii].lower()))
+                    print("true: {}".format(data[1, ii].lower()))
                     # print("rescale: {}".format(sess.run(self.rescale[ii])))
                 if i % 10 == 0:
                     # print("example: {}".format(num_loop * self.batch_size + ii))

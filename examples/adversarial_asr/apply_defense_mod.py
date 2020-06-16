@@ -208,19 +208,32 @@ def quantization(batch_size, audios, q, lengths):
     final_raw_audio = final_audios_np/32768.
     return  final_raw_audio
 
-def apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, raw_audio):
+def normalize_input(all_time_series, batch_size, lengths):
+    for i in range(batch_size):
+        if max(all_time_series[i]) < 1:
+             all_time_series[i] = all_time_series[i] * 32768
+        else:
+            all_time_series[i] = all_time_series[i]
+
+    max_length = max(lengths)
+    audios_np = np.zeros([batch_size, max_length])
+    for i in range(batch_size):
+        audio_float = all_time_series[i].astype(float)
+        audios_np[i, :lengths[i]] = audio_float
+    return audios_np
+
+def initial_audio(batch_size, th_batch, audios):
     # calculate normalized threshold
     psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
-    noisy = []
 
     # apply stft to data
-    audio_stft = []
     phase = []
     for i in range(batch_size):
-        audio_stft.append(np.transpose(abs(librosa.core.stft(audios[i], center=False))))
         phase = ((np.angle(librosa.core.stft(audios[i], center=False))))
+    return psd_threshold, phase
 
-
+def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw_audio, phase):
+    noisy = []
     # noisy = [[[0]*1025]*305]*batch_size
     #  for i in range(batch_size):
 
@@ -229,11 +242,11 @@ def apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, 
     actual_fac = float(pow(10.0, factor))
     for i in range(batch_size):
         temp1 = []
-        for j in range(len(th_batch[i])):
+        for j in range(len(psd_threshold[i])):
             temp2 = []
-            for k in range(len(th_batch[i][j])):
-                sd = th_batch[i][j][k] * actual_fac  # changed
-                mean = th_batch[i][j][k] * actual_fac * 3
+            for k in range(len(psd_threshold[i][j])):
+                sd = psd_threshold[i][j][k] * actual_fac  # changed
+                mean = psd_threshold[i][j][k] * actual_fac * 3
                 # temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k])) max was th
                 temp2.append((max(np.random.normal(mean, sd, 1)[0], 0)))
 
@@ -256,7 +269,7 @@ def apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, 
         final_time_series = np.array(time_series_original + time_series_noisy)
         all_time_series.append(final_time_series.tolist())
     all_time_series = np.array([np.array(i) for i in all_time_series])
-    return all_time_series
+    return normalize_input(all_time_series,batch_size, lengths)
 
 
 def save_audios(factor):
@@ -292,7 +305,8 @@ def save_audios(factor):
             raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
             psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
 
-            all_audios = apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, raw_audio)
+
+            #all_audios = apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, raw_audio)
 
             # types of defenses
             defense_time_series = [] # either adversarial or benign only for defense that are not our own

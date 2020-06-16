@@ -61,7 +61,7 @@ def Read_input(data, batch_size): # 0 = adv 1 = benign
 
         audios.append(audio_np)
         lengths.append(length)
-
+        np.savetxt("quant.txt", audio_np)
     max_length = max(lengths)
     lengths_freq = (np.array(lengths) // 2 + 1) // 240 * 3
     max_length_freq = max(lengths_freq)

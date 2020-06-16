@@ -198,18 +198,22 @@ def main(argv):
     assert num % batch_size == 0
 
     all_noisy_data = {}
+    num_loops = 1
     for l in range(int(num_loops)):
         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
         raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
         psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
 
     # save noisy files 5000 of each for each iteration
-        num_total_iter = 1
-        for i in range(batch_size):
-            for j in range(num_total_iter):
-                noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
-                key = str(l) + '_' + str(i) + '_' + str(j)
-                all_noisy_data.update({key:noisy_audios})
+        num_total_iter = 5000
+        for i in range(num_total_iter):
+            print("Iter: ", i)
+            noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio,
+                                                        phase)
+            for j in range(batch_size):
+                print("Iter: ", i, "Audio Number: ", j)
+                key = str(i) + '_' + str(l) + '_' + str(j)
+                all_noisy_data.update({key:noisy_audios[j]})
 
     output = open('defensive.pkl', 'wb')
     pickle.dump(all_noisy_data, output)

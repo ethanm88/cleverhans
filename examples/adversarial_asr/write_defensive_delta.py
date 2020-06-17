@@ -188,6 +188,7 @@ def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw
     all_time_series = np.array([np.array(i) for i in all_time_series])
     return normalize_input(all_time_series,batch_size, lengths)
 
+
 def main(argv):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
@@ -199,6 +200,7 @@ def main(argv):
 
     all_noisy_data = {}
     num_loops = 1
+    batch_size = 1
     for l in range(int(num_loops)):
         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
         raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)

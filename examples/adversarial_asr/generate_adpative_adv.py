@@ -399,7 +399,7 @@ class Attack:
 
         psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
         #noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
-        noisy_audios = read_noisy(all_noisy, num_loop, batch_size, 0)
+        noisy_audios = read_noisy(all_noisy, num_loop, batch_size, 1000)
         feed_dict = {self.input_tf: noisy_audios,
                      self.ori_input_tf: audios,
                      self.tgt_tf: trans,
@@ -433,7 +433,7 @@ class Attack:
         for i in range(MAX):
             now = time.time()
 
-            noisy_audios = read_noisy(all_noisy, num_loop, batch_size, i)
+            noisy_audios = read_noisy(all_noisy, num_loop, batch_size, 1000+i)
             feed_dict = {self.input_tf: noisy_audios,
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,

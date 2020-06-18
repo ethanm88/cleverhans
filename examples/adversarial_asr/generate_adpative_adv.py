@@ -177,13 +177,23 @@ def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw
     all_time_series = np.array([np.array(i) for i in all_time_series])
     return normalize_input(all_time_series,batch_size, lengths)
 
-def read_noisy(all_noisy, num_loop, batch_size, num_iter):
+def read_noisy(num_loop, batch_size, num_iter_batch): # only works one adv examples at a time - modify
+    # open relevant file for 100 iterations
+    file_name = './noisy_data/defensive_'+str(int(num_iter_batch)) + '.pkl'
+    pkl_file = open(file_name, 'rb')
+    all_noisy = pickle.load(pkl_file)
+    pkl_file.close()
 
+    #format noise
     noisy_audios = []
-    for i in range(batch_size):
-        key = str(num_iter) + '_' + str(int(num_loop)) + '_' + str(i)
-        noisy_audios.append((all_noisy[key]).tolist())
+
+    for i in range(100):
+        for j in range(batch_size): # only works for batch_size = 0
+            key = str(i) + '_' + str(int(num_loop)) + '_' + str(j)
+            noisy_audios.append((all_noisy[key]).tolist())
     noisy_audios = np.array([np.array(i) for i in noisy_audios])
+    print('Iter_batch: ', num_iter_batch)
+    print('File:', file_name)
     return noisy_audios
 
 class Attack:
@@ -268,7 +278,7 @@ class Attack:
         self.train2 = tf.group(self.train21, self.train22)
 
 
-    def attack_stage1(self, all_noisy, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop,
+    def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop,
                       data, lr_stage2):
         sess = self.sess
         # initialize and load the pretrained model
@@ -287,8 +297,8 @@ class Attack:
         psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
 
         #noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
-        noisy_audios = read_noisy(all_noisy, num_loop, batch_size, 0)
-        feed_dict = {self.input_tf: noisy_audios,
+        noisy_audios = read_noisy(num_loop, batch_size, 0) # initial noise
+        feed_dict = {self.input_tf: noisy_audios[0],
                      self.ori_input_tf: audios,
                      self.tgt_tf: trans,
                      self.sample_rate_tf: sample_rate,
@@ -317,9 +327,9 @@ class Attack:
 
         for i in range(MAX):
             now = time.time()
-
-            noisy_audios = read_noisy(all_noisy, num_loop, batch_size, i)
-            feed_dict = {self.input_tf: noisy_audios,
+            if i % 100 == 0 and i != 0: # load new file every 100 iterations
+                noisy_audios = read_noisy(num_loop, batch_size, int(i/100))
+            feed_dict = {self.input_tf: noisy_audios[i%100],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
                          self.sample_rate_tf: sample_rate,
@@ -380,7 +390,7 @@ class Attack:
 
         return final_deltas
 
-    def attack_stage2(self, all_noisy, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq,
+    def attack_stage2(self, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq,
                       num_loop, data, lr_stage2):
         sess = self.sess
         # initialize and load the pretrained model
@@ -399,8 +409,8 @@ class Attack:
 
         psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
         #noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
-        noisy_audios = read_noisy(all_noisy, num_loop, batch_size, 1000)
-        feed_dict = {self.input_tf: noisy_audios,
+        noisy_audios = read_noisy(num_loop, batch_size, 10) # load initial audio
+        feed_dict = {self.input_tf: noisy_audios[0],
                      self.ori_input_tf: audios,
                      self.tgt_tf: trans,
                      self.sample_rate_tf: sample_rate,
@@ -432,9 +442,9 @@ class Attack:
         min_th = 0.00005
         for i in range(MAX):
             now = time.time()
-
-            noisy_audios = read_noisy(all_noisy, num_loop, batch_size, 1000+i)
-            feed_dict = {self.input_tf: noisy_audios,
+            if i%100 == 0 and i!=0: # load new file every 100 iterations
+                noisy_audios = read_noisy(num_loop, batch_size, int(i/100)+10)
+            feed_dict = {self.input_tf: noisy_audios[i%100],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
                          self.sample_rate_tf: sample_rate,
@@ -451,7 +461,7 @@ class Attack:
             if i == 3000:
                 # min_th = -np.inf
                 lr_stage2 = 0.1
-                feed_dict = {self.input_tf: noisy_audios,
+                feed_dict = {self.input_tf: noisy_audios[i%100],
                              self.ori_input_tf: audios,
                              self.tgt_tf: trans,
                              self.sample_rate_tf: sample_rate,
@@ -530,12 +540,6 @@ def main(argv):
     num_loops = num / batch_size
     assert num % batch_size == 0
 
-    pkl_file = open('defensive.pkl', 'rb')
-
-    all_noisy = pickle.load(pkl_file)
-
-
-    pkl_file.close()
 
     with tf.device("/gpu:0"):
         tfconf = tf.ConfigProto(allow_soft_placement=True)
@@ -557,7 +561,7 @@ def main(argv):
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
-                adv_example = attack.attack_stage1(all_noisy, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
+                adv_example = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                    masks_freq, l, data_sub, FLAGS.lr_stage2)
 
                 # save the adversarial examples in stage 1
@@ -575,7 +579,7 @@ def main(argv):
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
 
-                adv_example, loss_th, final_alpha, adv_perturb = attack.attack_stage2(all_noisy, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch,
+                adv_example, loss_th, final_alpha, adv_perturb = attack.attack_stage2(raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch,
                                                                          maxlen, sample_rate, masks, masks_freq, l,
                                                                          data_sub, FLAGS.lr_stage2)
 

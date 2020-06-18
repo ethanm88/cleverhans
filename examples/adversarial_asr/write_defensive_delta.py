@@ -190,6 +190,7 @@ def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw
 
 
 def main(argv):
+
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
     num = len(data[0])
@@ -208,25 +209,36 @@ def main(argv):
 
     # save noisy files 5000 of each for each iteration
         num_total_iter = 5000
-        for i in range(num_total_iter):
+        for i in range(num_total_iter): # need to mkdir noisy_data
+            if i%100 == 0 and i != 0:
+                file_name = './noisy_data/defensive_' + str(int(i/100) - 1)+ '.pkl'
+                output = open(file_name, 'wb')
+                pickle.dump(all_noisy_data, output)
+                output.close()
+                all_noisy_data.clear()
             print("Iter: ", i)
             noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio,
                                                         phase)
             for j in range(batch_size):
                 print("Iter: ", i, "Audio Number: ", j)
-                key = str(i) + '_' + str(l) + '_' + str(j)
+                key = str(i%100) + '_' + str(l) + '_' + str(j)
                 all_noisy_data.update({key:noisy_audios[j]})
 
-    output = open('defensive.pkl', 'wb')
-    pickle.dump(all_noisy_data, output)
-    output.close()
+        file_name = './noisy_data/defensive_' + str(int(num_total_iter / 100) -1) + '.pkl'
+        output = open(file_name, 'wb')
+        pickle.dump(all_noisy_data, output)
+        output.close()
+        all_noisy_data.clear()
 
-    pkl_file = open('defensive.pkl', 'rb')
+
+    '''
+    pkl_file = open('./noisy_data/defensive_1.pkl', 'rb')
 
     data1 = pickle.load(pkl_file)
     pprint.pprint(data1)
 
     pkl_file.close()
+    '''
 
     '''
     my_data = {'a': [[1,2,4],[4,5,6]],

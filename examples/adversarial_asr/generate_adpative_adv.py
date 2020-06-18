@@ -188,9 +188,12 @@ def read_noisy(num_loop, batch_size, num_iter_batch): # only works one adv examp
     noisy_audios = []
 
     for i in range(100):
+        single_audios = []
         for j in range(batch_size): # only works for batch_size = 0
             key = str(i) + '_' + str(int(num_loop)) + '_' + str(j)
-            noisy_audios.append((all_noisy[key]).tolist())
+            single_audios.append((all_noisy[key]).tolist())
+        single_audios = np.array([np.array(i) for i in single_audios])
+        noisy_audios.append(single_audios)
     noisy_audios = np.array([np.array(i) for i in noisy_audios])
     print('Iter_batch: ', num_iter_batch)
     print('File:', file_name)

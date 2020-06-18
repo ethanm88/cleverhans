@@ -349,8 +349,8 @@ class Attack:
             # Actually do the optimization
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
-                actual_input, apply_delta, d, cl, l, predictions, new_input = sess.run(
-                    (self.actual_input, self.apply_delta, self.delta, self.celoss, self.loss_th, self.decoded,
+                actual_input, d, cl, predictions, new_input = sess.run(
+                    (self.actual_input, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
@@ -480,8 +480,8 @@ class Attack:
             sess.run(self.train2, feed_dict)
 
             if i % 10 == 0:
-                actual_input, apply_delta, d, cl, l, predictions, new_input = sess.run(
-                    (self.actual_input, self.apply_delta, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
+                actual_input, d, cl, l, predictions, new_input = sess.run(
+                    (self.actual_input, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
                 # print out the prediction each 50 iterations
@@ -502,7 +502,7 @@ class Attack:
                     if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                         if l[ii] < loss_th[ii]:
                             final_deltas[ii] = actual_input[ii]
-                            final_perturb[ii] = apply_delta[ii]
+
                             loss_th[ii] = l[ii]
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")
@@ -522,7 +522,7 @@ class Attack:
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
                     final_deltas[ii] = actual_input[ii]
-                    final_perturb[ii] = apply_delta[ii]
+
 
             if i % 500 == 0:
                 print("alpha is {}, loss_th is {}".format(final_alpha, loss_th))
@@ -532,7 +532,7 @@ class Attack:
 
             clock += time.time() - now
 
-        return final_deltas, loss_th, final_alpha, final_perturb
+        return final_deltas, loss_th, final_alpha
 
 
 def main(argv):
@@ -582,7 +582,7 @@ def main(argv):
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
 
-                adv_example, loss_th, final_alpha, adv_perturb = attack.attack_stage2(raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch,
+                adv_example, loss_th, final_alpha = attack.attack_stage2(raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch,
                                                                          maxlen, sample_rate, masks, masks_freq, l,
                                                                          data_sub, FLAGS.lr_stage2)
 

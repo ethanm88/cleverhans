@@ -37,7 +37,7 @@ flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1
 flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
-flags.DEFINE_integer('type_defense', '0', 'which gpu to run') # 0: ours, 1: MP3, 2: Quantization
+flags.DEFINE_integer('type_defense', '1', 'which gpu to run') # 0: ours, 1: MP3, 2: Quantization
 
 FLAGS = flags.FLAGS
 
@@ -195,6 +195,26 @@ def overlawAudio(file1, file2, final_file_name):
     combined.export(final_file_name, format='wav')
     return 'finished'
 
+def MP3_compression(batch_size, data_new, data_ori):
+    all_audios = []
+    for i in range(batch_size):
+        input_name = FLAGS.root_dir + str(data_new[0, i])
+        final_name = FLAGS.root_dir + data_ori[0][i][0:len(data_ori[0][i])-4] + '_compressed.mp3'
+        AudioSegment.from_file(input_name).export(final_name, format="mp3")
+
+        sample_rate_np, audio_temp = wav.read(str(final_name))
+
+        # read the wav form range from [-32767, 32768] or [-1, 1]
+        if max(audio_temp) < 1:
+            audio_np = audio_temp * 32768
+        else:
+            audio_np = audio_temp
+        all_audios.append(audio_np)
+    all_audios = numpy.array([numpy.array(i) for i in all_audios])
+    return all_audios
+
+
+
 def quantization(batch_size, audios, q, lengths):
     final_audios = []
     for i in range(batch_size):
@@ -280,9 +300,9 @@ def save_audios(factor):
     num_loops = round(num / batch_size)
     assert num % batch_size == 0
 
-    num_loops = 1
+
     for l in range(num_loops):
-        #l = l+1
+
         benign_time_series = []
         adv_time_series = []
         for x in range(2): # apply to defense to both benign (1) and adv example (0)
@@ -318,6 +338,13 @@ def save_audios(factor):
                     benign_time_series = defense_time_series
                 return adv_time_series, benign_time_series
 
+            if FLAGS.type_defense == 1:
+                defense_time_series = np.array(MP3_compression(batch_size, data_new, data_sub))
+                if FLAGS.adv:
+                    adv_time_series = defense_time_series
+                else:
+                    benign_time_series = defense_time_series
+                return adv_time_series, benign_time_series
 
             if FLAGS.type_defense == 0:
 

@@ -302,10 +302,11 @@ def save_audios(factor):
     assert num % batch_size == 0
 
     print(num_loops, num)
+    benign_time_series = []
+    adv_time_series = []
     for l in range(int(num_loops)):
 
-        benign_time_series = []
-        adv_time_series = []
+
         for x in range(2): # apply to defense to both benign (1) and adv example (0)
 
             if FLAGS.adv and (x == 1):

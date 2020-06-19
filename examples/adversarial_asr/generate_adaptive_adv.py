@@ -544,7 +544,7 @@ def main(argv):
     assert num % batch_size == 0
 
 
-    with tf.device("/gpu:0"):
+    with tf.device("/TPU:0"): # changed 
         tfconf = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=tfconf) as sess:
             # set up the attack class

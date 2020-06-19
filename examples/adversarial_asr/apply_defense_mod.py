@@ -301,7 +301,7 @@ def save_audios(factor):
     num_loops = round(num / batch_size)
     assert num % batch_size == 0
 
-
+    print(num_loops, num)
     for l in range(int(num_loops)):
 
         benign_time_series = []

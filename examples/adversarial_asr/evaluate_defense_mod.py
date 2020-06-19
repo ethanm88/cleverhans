@@ -89,7 +89,7 @@ def main(argv):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     # calculate the number of loops to run the test
     num = len(data[0])
-    batch_size = FLAGS.batch_size
+    batch_size = 10 # modified
     num_loops = num / batch_size
     assert num % batch_size == 0
 
@@ -140,7 +140,7 @@ def main(argv):
                 correct = 0
                 wer_adv = 0
                 wer_benign = 0
-
+                num_loops = 1
                 print("Factor: " + str(FLAGS.factor))
                 for l in range(int(num_loops)):
                     #l = l+1

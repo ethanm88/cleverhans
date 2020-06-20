@@ -29,7 +29,7 @@ flags.DEFINE_boolean('revert', 'False', 'to test reversion for adv ex')
 FLAGS = flags.FLAGS
 
 
-def Read_input(data, batch_size): # 0 = adv 1 = benign
+def Read_input(data, batch_size, num_loop): # 0 = adv 1 = benign
     """
     Returns:
         audios_np: a numpy array of size (batch_size, max_length) in float
@@ -37,7 +37,7 @@ def Read_input(data, batch_size): # 0 = adv 1 = benign
         trans: an array includes the targeted transcriptions (batch_size,)
         masks_freq: a numpy array to mask out the padding features in frequency domain
     """
-    adv_time_series, benign_time_series = apply_defense_mod.save_audios(FLAGS.factor)
+    adv_time_series, benign_time_series = apply_defense_mod.save_audios(FLAGS.factor, num_loop)
     audios = []
     lengths = []
 
@@ -140,12 +140,11 @@ def main(argv):
                 correct = 0
                 wer_adv = 0
                 wer_benign = 0
-                num_loops = 1
                 print("Factor: " + str(FLAGS.factor))
                 for l in range(int(num_loops)):
                     #l = l+1
                     data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                    audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size)
+                    audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size, l)
                     feed_dict = {input_tf: audios_np,
                                  sample_rate_tf: sample_rate,
                                  tgt_tf: tgt_np,

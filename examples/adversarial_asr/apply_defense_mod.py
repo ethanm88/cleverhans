@@ -293,7 +293,7 @@ def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw
     return normalize_input(all_time_series,batch_size, lengths)
 
 
-def save_audios(factor):
+def save_audios(factor, index_loop):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
     num = len(data[0])
@@ -304,8 +304,9 @@ def save_audios(factor):
     print(num_loops, num)
     benign_time_series = []
     adv_time_series = []
+    num_loops = 1
     for l in range(int(num_loops)):
-
+        l = index_loop
 
         for x in range(2): # apply to defense to both benign (1) and adv example (0)
 

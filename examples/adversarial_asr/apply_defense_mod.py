@@ -201,8 +201,10 @@ def MP3_compression(batch_size, data_new, data_ori):
         input_name = FLAGS.root_dir + str(data_new[0, i])
         final_name_mp3 = FLAGS.root_dir + data_ori[0][i][0:len(data_ori[0][i])-4] + '_compressed.mp3'
         final_name_wav = FLAGS.root_dir + data_ori[0][i][0:len(data_ori[0][i])-4] + '_compressed.wav'
+        
         AudioSegment.from_file(input_name).export(final_name_mp3, format="mp3")
-        AudioSegment.from_file(final_name_mp3).export(final_name_wav, format="wav")
+        sound = AudioSegment.from_mp3(final_name_mp3)
+        sound.export(final_name_wav, format="wav")
         sample_rate_np, audio_temp = wav.read(str(final_name_wav))
 
         # read the wav form range from [-32767, 32768] or [-1, 1]

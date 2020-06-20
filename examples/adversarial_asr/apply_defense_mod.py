@@ -37,7 +37,7 @@ flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1
 flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
-flags.DEFINE_integer('type_defense', '1', 'which gpu to run') # 0: ours, 1: MP3, 2: Quantization
+flags.DEFINE_integer('type_defense', '2', 'which gpu to run') # 0: ours, 1: MP3, 2: Quantization
 
 FLAGS = flags.FLAGS
 
@@ -336,6 +336,7 @@ def save_audios(factor, index_loop):
             # types of defenses
             defense_time_series = [] # either adversarial or benign only for defense that are not our own
             if FLAGS.type_defense == 2:
+                print('Type: Quant')
                 defense_time_series = np.array(quantization(batch_size, audios, 256., lengths))
                 if FLAGS.adv:
                     adv_time_series = defense_time_series
@@ -344,6 +345,7 @@ def save_audios(factor, index_loop):
                 return adv_time_series, benign_time_series
 
             if FLAGS.type_defense == 1:
+                print('Type: MP3')
                 defense_time_series = np.array(MP3_compression(batch_size, data_new, data_sub))
                 if FLAGS.adv:
                     adv_time_series = defense_time_series
@@ -352,7 +354,7 @@ def save_audios(factor, index_loop):
                 return adv_time_series, benign_time_series
 
             if FLAGS.type_defense == 0:
-
+                print('Type: Ours')
                 audio_stft = []
                 ori = 0
                 final = 0

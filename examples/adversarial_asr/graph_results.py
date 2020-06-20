@@ -37,10 +37,19 @@ def main():
     all_adv = []
     all_benign = []
     all_revert = []
+    min_revert_rate = 0
+    index = 0
+
+    print('Revert:')
     for i in range(len(benign)):
         all_adv.append((adv[i] + set_2_adv[i])/2.0)
         all_benign.append((benign[i] + set_2_benign[i])/2.0)
         all_revert.append((revert[i] + set_2_revert[i])/2.0)
+        print(i, all_adv[i])
+        if min_revert_rate<all_adv[i]:
+            min_revert_rate=all_adv[i]
+            index = i
+    print('revert_rate',index, min_revert_rate)
 
 
     plt.plot(k,all_adv, label = 'Adversarial to Adversarial WER')

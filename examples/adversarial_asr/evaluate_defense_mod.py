@@ -89,7 +89,7 @@ def main(argv):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
     # calculate the number of loops to run the test
     num = len(data[0])
-    batch_size = 10 # modified
+    batch_size = FLAGS.batch_size # modified
     num_loops = num / batch_size
     assert num % batch_size == 0
 

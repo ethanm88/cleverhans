@@ -45,7 +45,7 @@ def main():
         all_adv.append((adv[i] + set_2_adv[i])/2.0)
         all_benign.append((benign[i] + set_2_benign[i])/2.0)
         all_revert.append((revert[i] + set_2_revert[i])/2.0)
-        print(i, all_adv[i])
+        print(k[i], all_adv[i],all_benign[i], all_revert[i])
         if min_revert_rate<all_adv[i]:
             min_revert_rate=all_adv[i]
             index = i

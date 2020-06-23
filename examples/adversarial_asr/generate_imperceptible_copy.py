@@ -389,9 +389,9 @@ def main(argv):
                             lr_stage2=FLAGS.lr_stage2,
                             num_iter_stage1=FLAGS.num_iter_stage1,
                             num_iter_stage2=FLAGS.num_iter_stage2)
-
             num_loops = 1
             for l in range(num_loops):
+
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
 
                 # stage 1

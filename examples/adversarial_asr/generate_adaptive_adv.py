@@ -237,7 +237,7 @@ class Attack:
 
             # variable
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32), name='qq_rescale')
-            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.00005, name='qq_alpha')
+            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.05, name='qq_alpha')
 
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
@@ -402,7 +402,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
 
         sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
-        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.00005))
+        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.05))
 
         # reassign the variables
         sess.run(tf.assign(self.delta_large, adv))
@@ -442,7 +442,7 @@ class Attack:
         final_perturb = [None] * self.batch_size
         # final_th = [None] * self.batch_size
         clock = 0
-        min_th = 0.00005
+        min_th = 0.0005
         for i in range(MAX):
             now = time.time()
             if i%100 == 0 and i!=0: # load new file every 100 iterations

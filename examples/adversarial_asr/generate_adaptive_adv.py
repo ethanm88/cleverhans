@@ -564,13 +564,16 @@ def main(argv):
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
+                '''
                 adv_example = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                    masks_freq, l, data_sub, FLAGS.lr_stage2)
+                
                 file_name = 'adaptive_stage_1.pkl'
                 output = open(file_name, 'wb')
                 pickle.dump(adv_example, output)
                 output.close()
-                '''
+                
+                
                 # save the adversarial examples in stage 1
                 for i in range(batch_size):
                     print("Final distortion for stage 1",
@@ -580,6 +583,12 @@ def main(argv):
                     adv_example_float = adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(adv_example_float[:lengths[i]]))
                     print(saved_name)
+                '''
+                file_name = 'adaptive_stage_1.pkl'
+                pkl_file = open(file_name, 'rb')
+                adv_example = pickle.load(pkl_file)
+                pkl_file.close()
+
 
                     # stage 2
                 # read the adversarial examples saved in stage 1
@@ -605,7 +614,7 @@ def main(argv):
                     adv_example[i] = adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
                     print(saved_name)
-                '''
+
 
 
 if __name__ == '__main__':

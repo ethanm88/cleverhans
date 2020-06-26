@@ -486,8 +486,8 @@ class Attack:
             sess.run(self.train2, feed_dict)
 
             if i % 10 == 0:
-                actual_input, d, cl, l, predictions, new_input = sess.run(
-                    (self.actual_input, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
+                d, cl, l, predictions, new_input = sess.run(
+                    (self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
                 # print out the prediction each 50 iterations
@@ -528,6 +528,8 @@ class Attack:
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
                     final_deltas[ii] = actual_input[ii]
+                if i == MAX -1:
+
 
             if i % 500 == 0:
                 print("alpha is {}, loss_th is {}".format(final_alpha, loss_th))
@@ -548,13 +550,8 @@ def main(argv):
     num_loops = num / batch_size
     assert num % batch_size == 0
 
-    resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='grpc://' + os.environ['COLAB_TPU_ADDR'])
-    tf.config.experimental_connect_to_cluster(resolver)
-    # This is the TPU initialization code that has to be at the beginning.
-    tf.tpu.experimental.initialize_tpu_system(resolver)
-    print("All devices: ", tf.config.list_logical_devices('TPU'))
 
-    with tf.device("/TPU:0"):  # changed
+    with tf.device("/gpu:0"):  # changed
         tfconf = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=tfconf) as sess:
             # set up the attack class

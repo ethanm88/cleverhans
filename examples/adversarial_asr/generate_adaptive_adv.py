@@ -2,6 +2,7 @@ import pickle
 import pprint
 
 import tensorflow as tf
+import os
 from lingvo import model_imports
 from lingvo import model_registry
 import numpy as np
@@ -13,7 +14,6 @@ from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
 import librosa
-from google.colab import files
 
 # data directory
 flags.DEFINE_string("root_dir", "./", "location of Librispeech")
@@ -36,7 +36,7 @@ flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1
 flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
-flags.DEFINE_integer('iter_start', '0', 'start of stage two loop')
+
 FLAGS = flags.FLAGS
 
 
@@ -399,7 +399,7 @@ class Attack:
 
         return final_deltas
 
-    def attack_stage2(self, pre_final_deltas, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen,
+    def attack_stage2(self, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen,
                       sample_rate, masks, masks_freq,
                       num_loop, data, lr_stage2):
         sess = self.sess
@@ -419,7 +419,7 @@ class Attack:
 
         psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
         # noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
-        noisy_audios = read_noisy(num_loop, batch_size, 10 + int(FLAGS.iter_start/100))  # load initial audio
+        noisy_audios = read_noisy(num_loop, batch_size, 10)  # load initial audio
         feed_dict = {self.input_tf: noisy_audios[0],
                      self.ori_input_tf: audios,
                      self.tgt_tf: trans,
@@ -445,24 +445,12 @@ class Attack:
         MAX = self.num_iter_stage2
         loss_th = [np.inf] * self.batch_size
         final_deltas = [None] * self.batch_size
-
-        if FLAGS.iter_start != 0:
-            final_deltas = pre_final_deltas
-
-
         final_alpha = [None] * self.batch_size
         final_perturb = [None] * self.batch_size
         # final_th = [None] * self.batch_size
         clock = 0
         min_th = 0.0005
-        for i in range(FLAGS.iter_start,MAX):
-            if i%1000 == 0 and i != 0:
-                file_name = 'adaptive_stage_2_'+str(i)+'.pkl'
-                output = open(file_name, 'wb')
-                pickle.dump(final_deltas, output)
-                output.close()
-                files.download(file_name)
-                print('downloaded:', file_name)
+        for i in range(MAX):
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
@@ -498,8 +486,8 @@ class Attack:
             sess.run(self.train2, feed_dict)
 
             if i % 10 == 0:
-                actual_input, d, cl, l, predictions, new_input = sess.run(
-                    (self.actual_input, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
+                d, cl, l, predictions, new_input = sess.run(
+                    (self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
                 # print out the prediction each 50 iterations
@@ -519,7 +507,9 @@ class Attack:
                     # if the network makes the targeted prediction
                     if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                         if l[ii] < loss_th[ii]:
-                            final_deltas[ii] = actual_input[ii]
+                            #final_deltas[ii] = new_input[ii]
+                            actual_input = sess.run((self.actual_input), feed_dict)
+                            final_deltas[ii] = actual_input
 
                             loss_th[ii] = l[ii]
                             final_alpha[ii] = alpha[ii]
@@ -539,7 +529,11 @@ class Attack:
 
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
-                    final_deltas[ii] = actual_input[ii]
+                    #final_deltas[ii] = new_input[ii]
+                    actual_input = sess.run((self.actual_input), feed_dict)
+                    final_deltas[ii] = actual_input
+
+
 
             if i % 500 == 0:
                 print("alpha is {}, loss_th is {}".format(final_alpha, loss_th))
@@ -583,13 +577,10 @@ def main(argv):
                 '''
                 adv_example = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                    masks_freq, l, data_sub, FLAGS.lr_stage2)
-
                 file_name = 'adaptive_stage_1.pkl'
                 output = open(file_name, 'wb')
                 pickle.dump(adv_example, output)
                 output.close()
-
-
                 # save the adversarial examples in stage 1
                 for i in range(batch_size):
                     print("Final distortion for stage 1",

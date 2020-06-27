@@ -457,7 +457,7 @@ class Attack:
             if i%1000 == 0:
                 file_name = 'adaptive_stage2_' + str(i) +'.pkl'
                 output = open(file_name, 'wb')
-                a = float((self.alpha))
+                a = self.alpha
                 dl = (self.delta_large)
                 #dl2 = np.array(sess.run(self.delta_large))
                 var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': a, 'loss_th': loss_th, 'delta_large': dl}

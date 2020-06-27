@@ -465,7 +465,7 @@ class Attack:
                     var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'loss_th': np.copy(loss_th)}
 
                     dill.dump(var_dict, file)
-                    files.download(file_name)
+                    
 
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations

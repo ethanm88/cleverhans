@@ -457,9 +457,9 @@ class Attack:
             if i%1000 == 0:
                 file_name = 'adaptive_stage2_' + str(i) +'.pkl'
                 output = open(file_name, 'wb')
-                a = sess.run(self.alpha)
-                dl = self.delta_large
-                dl2 = sess.run(self.delta_large)
+                a = float(sess.run(self.alpha))
+                dl = np.array(self.delta_large)
+                dl2 = np.array(sess.run(self.delta_large))
                 var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': a, 'loss_th': loss_th, 'delta_large': dl, 'delta_large_2': dl2}
                 pickle.dump(var_dict, output)
                 output.close()

@@ -14,6 +14,8 @@ from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
 import librosa
+from google.colab import files
+
 
 # data directory
 flags.DEFINE_string("root_dir", "./", "location of Librispeech")
@@ -451,6 +453,16 @@ class Attack:
         clock = 0
         min_th = 0.0005
         for i in range(MAX):
+
+            if i%1000 == 0 and i != 0:
+                file_name = 'adaptive_stage2_' + i +'.pkl'
+                output = open(file_name, 'wb')
+                var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': sess.run(self.alpha), 'loss_th': loss_th, 'delta_large': self.delta_large, 'delta_large_2': sess.run(self.delta_large)}
+                pickle.dump(var_dict, output)
+                output.close()
+                files.download(file_name)
+
+
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
@@ -465,7 +477,7 @@ class Attack:
                          self.noise: noise,
                          self.maxlen: maxlen,
                          self.lr_stage2: lr_stage2}
-            losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
+            #losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             if i == 3000:
                 # min_th = -np.inf
@@ -484,7 +496,7 @@ class Attack:
 
             # Actually do the optimization
             sess.run(self.train2, feed_dict)
-
+            print('Delta_large', self.delta_large)
             if i % 10 == 0:
                 d, cl, l, predictions, new_input = sess.run(
                     (self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
@@ -510,7 +522,7 @@ class Attack:
                             #final_deltas[ii] = new_input[ii]
                             actual_input = sess.run((self.actual_input), feed_dict)
                             final_deltas[ii] = actual_input
-
+                            final_perturb = d
                             loss_th[ii] = l[ii]
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")

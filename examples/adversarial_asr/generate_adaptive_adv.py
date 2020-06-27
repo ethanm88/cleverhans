@@ -455,16 +455,17 @@ class Attack:
         for i in range(MAX):
 
             if i%1000 == 0:
-                file_name = 'adaptive_stage2_' + str(i) +'.pkl'
-                output = open(file_name, 'wb')
-                a = self.alpha
-                dl = (self.delta_large)
-                #dl2 = np.array(sess.run(self.delta_large))
-                var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': a, 'loss_th': loss_th, 'delta_large': dl}
-                pickle.dump(var_dict, output)
-                output.close()
-                files.download(file_name)
+                import dill
+                file_name = 'adaptive_stage2_' + str(i) + '.pkl'
+                with open(file_name, 'wb') as file:
+                    a = self.alpha
+                    dl = (self.delta_large)
+                    # dl2 = np.array(sess.run(self.delta_large))
+                    var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': a,
+                                'loss_th': loss_th, 'delta_large': dl}
 
+                    dill.dump(var_dict, file)
+                    files.download(file_name)
 
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations

@@ -454,7 +454,7 @@ class Attack:
         min_th = 0.0005
         for i in range(MAX):
 
-            if i%1000 == 0 and i != 0:
+            if i%1000 == 0:
                 file_name = 'adaptive_stage2_' + i +'.pkl'
                 output = open(file_name, 'wb')
                 var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': sess.run(self.alpha), 'loss_th': loss_th, 'delta_large': self.delta_large, 'delta_large_2': sess.run(self.delta_large)}
@@ -464,7 +464,7 @@ class Attack:
 
 
             now = time.time()
-            if i % 100 == 0:  # load new file every 100 iterations
+            if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
             feed_dict = {self.input_tf: noisy_audios[i % 100],
                          self.ori_input_tf: audios,

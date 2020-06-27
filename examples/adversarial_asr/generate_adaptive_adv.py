@@ -452,20 +452,29 @@ class Attack:
         # final_th = [None] * self.batch_size
         clock = 0
         min_th = 0.0005
-        for i in range(MAX):
+        for i in range(int(MAX/2)): # changed
 
             if i%1000 == 0:
                 import dill
                 file_name = 'adaptive_stage2_' + str(i) + '.pkl'
                 with open(file_name, 'wb') as file:
-                    a = np.copy(self.alpha)
-                    dl = np.copy(self.delta_large)
-                    # dl2 = np.array(sess.run(self.delta_large))
-                    #var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'cur_alpha': a, 'loss_th': np.copy(loss_th), 'delta_large': dl}
-                    var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'loss_th': np.copy(loss_th)}
+                    a = []
+                    dl = []#np.copy(self.delta_large)
+                    print(type(self.delta_large[0][0]))
+                    for cc in range(batch_size):
+                        temp = []
+                        a.append((self.alpha[cc]))
+                        for cci in range(FLAGS.max_length_dataset):
+                            temp.append((self.delta_large[cc][cci]))
+                        dl.append(temp)
 
+                    dl = np.array([np.array(p) for p in dl])
+
+                    # dl2 = np.array(sess.run(self.delta_large))
+                    var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'cur_alpha': a, 'loss_th': np.copy(loss_th), 'delta_large': dl}
+                    #var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'loss_th': np.copy(loss_th)}
                     dill.dump(var_dict, file)
-                    
+
 
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations

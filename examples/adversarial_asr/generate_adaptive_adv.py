@@ -461,8 +461,8 @@ class Attack:
                     a = np.copy(self.alpha)
                     dl = np.copy(self.delta_large)
                     # dl2 = np.array(sess.run(self.delta_large))
-                    var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'cur_alpha': a,
-                                'loss_th': np.copy(loss_th), 'delta_large': dl}
+                    #var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'cur_alpha': a, 'loss_th': np.copy(loss_th), 'delta_large': dl}
+                    var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'loss_th': np.copy(loss_th)}
 
                     dill.dump(var_dict, file)
                     files.download(file_name)

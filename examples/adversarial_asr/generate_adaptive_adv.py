@@ -457,7 +457,10 @@ class Attack:
             if i%1000 == 0:
                 file_name = 'adaptive_stage2_' + str(i) +'.pkl'
                 output = open(file_name, 'wb')
-                var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': sess.run(self.alpha), 'loss_th': loss_th, 'delta_large': self.delta_large, 'delta_large_2': sess.run(self.delta_large)}
+                a = sess.run(self.alpha)
+                dl = self.delta_large
+                dl2 = sess.run(self.delta_large)
+                var_dict = {'final_deltas': final_deltas, 'final_alpha': final_alpha, 'cur_alpha': a, 'loss_th': loss_th, 'delta_large': dl, 'delta_large_2': dl2}
                 pickle.dump(var_dict, output)
                 output.close()
                 files.download(file_name)
@@ -497,6 +500,7 @@ class Attack:
             # Actually do the optimization
             sess.run(self.train2, feed_dict)
             print('Delta_large', self.delta_large)
+            print('Alpha', self.alpha)
             if i % 10 == 0:
                 d, cl, l, predictions, new_input = sess.run(
                     (self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)

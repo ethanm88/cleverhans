@@ -452,7 +452,7 @@ class Attack:
         # final_th = [None] * self.batch_size
         clock = 0
         min_th = 0.0005
-        for i in range(2001): # changed - start at 20000
+        for i in range(MAX): # changed - start at 20000
 
             if i == (2000) or i == 0:
                 import dill
@@ -460,7 +460,7 @@ class Attack:
                 dl = []  # np.copy(self.delta_large)
                 delta_np = sess.run(self.delta_large)
                 alpha_np = sess.run(self.alpha)
-                
+
                 print(type(delta_np[0][0]))
                 for cc in range(batch_size):
                     print(cc)
@@ -540,8 +540,8 @@ class Attack:
 
             # Actually do the optimization
             sess.run(self.train2, feed_dict)
-            print('Delta_large', self.delta_large)
-            print('Alpha', self.alpha)
+            #print('Delta_large', self.delta_large)
+            #print('Alpha', self.alpha)
             if i % 10 == 0:
                 d, cl, l, predictions, new_input = sess.run(
                     (self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)

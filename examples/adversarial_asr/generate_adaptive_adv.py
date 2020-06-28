@@ -458,12 +458,16 @@ class Attack:
                 import dill
                 a = []
                 dl = []  # np.copy(self.delta_large)
-                print(type(self.delta_large[0][0]))
+                delta_np = sess.run(self.delta_large)
+                alpha_np = sess.run(self.alpha)
+                
+                print(type(delta_np[0][0]))
                 for cc in range(batch_size):
+                    print(cc)
                     temp = []
-                    a.append((self.alpha[cc]))
+                    a.append((alpha_np[cc]))
                     for cci in range(FLAGS.max_length_dataset):
-                        temp.append((self.delta_large[cc][cci]))
+                        temp.append((delta_np[cc][cci]))
                     dl.append(temp)
 
                 dl = np.array([np.array(p) for p in dl])

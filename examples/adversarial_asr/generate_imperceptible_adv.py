@@ -338,9 +338,12 @@ class Attack:
 
                     alpha = sess.run(self.alpha)
 
-                    
+
                     print("Every:")
-                    print("iteration: %d, alpha: %f, loss_ce: %f, loss_th: %f" % (i, alpha[ii], cl[ii], l[ii])
+                    print("iteration_Test: %d" % (i))
+                    print("alpha_Test: %f" % (alpha[ii]))
+                    print("loss_ce_Test: %f" % (cl[ii]))
+                    print("loss_th_Test: %f" % (l[ii]))
 
                     with open("alpha.txt", "a") as text_file:
                         text_file.write(str(alpha[ii]) + "\n")

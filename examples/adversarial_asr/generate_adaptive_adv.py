@@ -486,6 +486,7 @@ class Attack:
                 file_name = 'adaptive_stage2_' + 'cur_alpha' + str(i) + '.pkl'
                 print(file_name)
                 with open(file_name, 'wb') as file:
+                    print(a)
                     var_dict = {'cur_alpha': a}
                     dill.dump(var_dict, file)
 
@@ -498,6 +499,7 @@ class Attack:
                 file_name = 'adaptive_stage2_' + 'delta_large' + str(i) + '.pkl'
                 print(file_name)
                 with open(file_name, 'wb') as file:
+                    print(dl)
                     var_dict = {'delta_large': dl}
                     dill.dump(var_dict, file)
 

@@ -447,6 +447,8 @@ def main(argv):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_stage2.wav"
                     adv_example[i] = adv_example[i] / 32768.
+                    print('size', np.array(adv_example[i][:lengths[i]]).size)
+
                     wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
                     print(saved_name)
 

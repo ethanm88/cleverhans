@@ -247,7 +247,7 @@ class Attack:
 
             # variable
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32), name='qq_rescale')
-            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.05, name='qq_alpha')
+            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.0001, name='qq_alpha')
 
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
@@ -352,7 +352,7 @@ class Attack:
                          self.noise: noise,
                          self.maxlen: maxlen,
                          self.lr_stage2: lr_stage2}
-            losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
+            #losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
             sess.run(self.train1, feed_dict)
@@ -411,7 +411,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
 
         sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
-        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.05))
+        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.0001))
 
         # reassign the variables
         sess.run(tf.assign(self.delta_large, adv))
@@ -451,7 +451,7 @@ class Attack:
         final_perturb = [None] * self.batch_size
         # final_th = [None] * self.batch_size
         clock = 0
-        min_th = 0.0005
+        min_th = 0.000005
         for i in range(MAX): # changed - start at 20000
 
             if i == (2000) or i == 0:
@@ -543,7 +543,7 @@ class Attack:
             #print('Delta_large', self.delta_large)
             #print('Alpha', self.alpha)
             if i % 10 == 0:
-                d, cl, l, predictions, new_input = sess.run(
+                actual_input, d, cl, l, predictions, new_input = sess.run(
                     (self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
@@ -686,7 +686,8 @@ def main(argv):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2.wav"
                     adv_example[i] = adv_example[i] / 32768.
-                    wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
+                    print('size', np.array(adv_example[i][:lengths[i]]).size)
+                    wav.write(saved_name, 16000, (np.array(adv_example[i][:lengths[i]])).transpose())
                     print(saved_name)
 
 

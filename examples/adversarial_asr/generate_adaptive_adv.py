@@ -452,9 +452,9 @@ class Attack:
         # final_th = [None] * self.batch_size
         clock = 0
         min_th = 0.0005
-        for i in range(int(MAX/2)): # changed
+        for i in range(2001): # changed - start at 20000
 
-            if i%1000 == 0:
+            if i == (2000):
                 import dill
                 file_name = 'adaptive_stage2_' + str(i) + '.pkl'
                 with open(file_name, 'wb') as file:
@@ -469,6 +469,7 @@ class Attack:
                         dl.append(temp)
 
                     dl = np.array([np.array(p) for p in dl])
+                    a = np.array([np.array(p) for p in a])
 
                     # dl2 = np.array(sess.run(self.delta_large))
                     var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'cur_alpha': a, 'loss_th': np.copy(loss_th), 'delta_large': dl}

@@ -456,26 +456,50 @@ class Attack:
 
             if i == (2000) or i == 0:
                 import dill
-                file_name = 'adaptive_stage2_' + str(i) + '.pkl'
+                a = []
+                dl = []  # np.copy(self.delta_large)
+                print(type(self.delta_large[0][0]))
+                for cc in range(batch_size):
+                    temp = []
+                    a.append((self.alpha[cc]))
+                    for cci in range(FLAGS.max_length_dataset):
+                        temp.append((self.delta_large[cc][cci]))
+                    dl.append(temp)
+
+                dl = np.array([np.array(p) for p in dl])
+                a = np.array([np.array(p) for p in a])
+
+                # var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'cur_alpha': a, 'loss_th': np.copy(loss_th), 'delta_large': dl}
+
+                file_name = 'adaptive_stage2_' + 'final_deltas' + str(i) + '.pkl'
+                print(file_name)
                 with open(file_name, 'wb') as file:
-                    a = []
-                    dl = []#np.copy(self.delta_large)
-                    print(type(self.delta_large[0][0]))
-                    for cc in range(batch_size):
-                        temp = []
-                        a.append((self.alpha[cc]))
-                        for cci in range(FLAGS.max_length_dataset):
-                            temp.append((self.delta_large[cc][cci]))
-                        dl.append(temp)
-
-                    dl = np.array([np.array(p) for p in dl])
-                    a = np.array([np.array(p) for p in a])
-
-                    # dl2 = np.array(sess.run(self.delta_large))
-                    var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'cur_alpha': a, 'loss_th': np.copy(loss_th), 'delta_large': dl}
-                    #var_dict = {'final_deltas': np.copy(final_deltas), 'final_alpha': np.copy(final_alpha), 'loss_th': np.copy(loss_th)}
+                    var_dict = {'final_deltas': np.copy(final_deltas)}
                     dill.dump(var_dict, file)
 
+                file_name = 'adaptive_stage2_' + 'final_alpha' + str(i) + '.pkl'
+                print(file_name)
+                with open(file_name, 'wb') as file:
+                    var_dict = {'final_alpha': np.copy(final_alpha)}
+                    dill.dump(var_dict, file)
+
+                file_name = 'adaptive_stage2_' + 'cur_alpha' + str(i) + '.pkl'
+                print(file_name)
+                with open(file_name, 'wb') as file:
+                    var_dict = {'cur_alpha': a}
+                    dill.dump(var_dict, file)
+
+                file_name = 'adaptive_stage2_' + 'loss_th' + str(i) + '.pkl'
+                print(file_name)
+                with open(file_name, 'wb') as file:
+                    var_dict = {'loss_th': np.copy(loss_th)}
+                    dill.dump(var_dict, file)
+
+                file_name = 'adaptive_stage2_' + 'delta_large' + str(i) + '.pkl'
+                print(file_name)
+                with open(file_name, 'wb') as file:
+                    var_dict = {'delta_large': dl}
+                    dill.dump(var_dict, file)
 
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations

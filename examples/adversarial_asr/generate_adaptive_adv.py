@@ -454,7 +454,7 @@ class Attack:
         min_th = 0.0005
         for i in range(2001): # changed - start at 20000
 
-            if i == (2000):
+            if i == (2000) or i == 0:
                 import dill
                 file_name = 'adaptive_stage2_' + str(i) + '.pkl'
                 with open(file_name, 'wb') as file:

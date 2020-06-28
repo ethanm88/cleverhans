@@ -345,9 +345,9 @@ class Attack:
                     print("loss_ce_Test: %f" % (cl[ii]))
                     print("loss_th_Test: %f" % (l[ii]))
 
-                    with open("alpha.txt", "a") as text_file:
+                    with open("alpha_normal.txt", "a") as text_file:
                         text_file.write(str(alpha[ii]) + "\n")
-                    with open("loss_th.txt", "a") as text_file:
+                    with open("loss_th_normal.txt", "a") as text_file:
                         text_file.write(str(l[ii]) + "\n")
 
                     if i % 100 == 0:

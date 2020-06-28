@@ -557,6 +557,13 @@ class Attack:
                     # print("example: {}".format(num_loop * self.batch_size + ii))
 
                     alpha = sess.run(self.alpha)
+
+                    
+                    with open("alpha.txt", "a") as text_file:
+                        text_file.write(str(alpha[ii]) + "\n")
+                    with open("loss_th.txt", "a") as text_file:
+                        text_file.write(str(l[ii]) + "\n")
+
                     if i % 100 == 0:
                         print("example: {}".format(num_loop * self.batch_size + ii))
                         print("iteration: %d, alpha: %f, loss_ce: %f, loss_th: %f" % (i, alpha[ii], cl[ii], l[ii]))

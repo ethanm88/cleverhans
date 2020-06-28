@@ -299,6 +299,7 @@ class Attack:
         final_deltas = [None] * self.batch_size
         final_alpha = [None] * self.batch_size
         # final_th = [None] * self.batch_size
+
         clock = 0
         min_th = 0.0005
         for i in range(MAX):
@@ -326,6 +327,9 @@ class Attack:
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
+
+
+
                 if i % 1000 == 0:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
                     # print("rescale: {}".format(sess.run(self.rescale[ii])))
@@ -333,6 +337,12 @@ class Attack:
                     # print("example: {}".format(num_loop * self.batch_size + ii))
 
                     alpha = sess.run(self.alpha)
+
+                    with open("alpha.txt", "a") as text_file:
+                        text_file.write(str(alpha[ii]) + "\n")
+                    with open("loss_th.txt", "a") as text_file:
+                        text_file.write(str(l[ii]) + "\n")
+
                     if i % 100 == 0:
                         print("example: {}".format(num_loop * self.batch_size + ii))
                         print("iteration: %d, alpha: %f, loss_ce: %f, loss_th: %f" % (i, alpha[ii], cl[ii], l[ii]))

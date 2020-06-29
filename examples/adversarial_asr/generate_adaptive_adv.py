@@ -547,7 +547,7 @@ class Attack:
             #print('Alpha', self.alpha)
             if i % 10 == 0:
                 actual_input, d, cl, l, predictions, new_input = sess.run(
-                    (self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
+                    (self.actual_input, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
                 # print out the prediction each 50 iterations
@@ -579,7 +579,7 @@ class Attack:
                     if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                         if l[ii] < loss_th[ii]:
                             #final_deltas[ii] = new_input[ii]
-                            actual_input = sess.run((self.actual_input), feed_dict)
+                            #actual_input = sess.run((self.actual_input), feed_dict)
                             final_deltas[ii] = actual_input
                             final_perturb = d
                             loss_th[ii] = l[ii]
@@ -601,7 +601,7 @@ class Attack:
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
                     #final_deltas[ii] = new_input[ii]
-                    actual_input = sess.run((self.actual_input), feed_dict)
+                    #actual_input = sess.run((self.actual_input), feed_dict)
                     final_deltas[ii] = actual_input
 
 

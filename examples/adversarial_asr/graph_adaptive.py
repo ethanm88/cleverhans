@@ -13,17 +13,18 @@ def readfromfile(file_name, size):
 
 
 def main():
-    alpha_adapt = readfromfile("alpha_adaptive.txt", 1)
-    loss_th_adapt = readfromfile("loss_th_adaptive.txt", 1)
+    alpha_adapt = readfromfile("alpha_adaptive_6000.txt", 1)
+    loss_th_adapt = readfromfile("loss_th_adaptive_6000.txt", 1)
     loss_th_adapt = np.log(loss_th_adapt)
 
     alpha_normal = readfromfile("alpha_normal.txt", 1)
     loss_th_normal = readfromfile("loss_th_normal.txt", 1)
     loss_th_normal = np.log(loss_th_normal)
     iters = range(0,4000, 10)
+    iters2 = range(0,6000, 10)
 
     plt.title('Alphas (Adaptive vs. Normal)',fontsize=18)
-    plt.plot(iters, alpha_adapt, label='Adaptive Attack')
+    plt.plot(iters2, alpha_adapt, label='Adaptive Attack')
     plt.plot(iters, alpha_normal, label='Normal Attack')
     plt.xlabel('Iteration', fontsize=14)
     plt.ylabel('Alpha', fontsize=14)
@@ -31,13 +32,13 @@ def main():
     plt.show()
 
     plt.title('Threshold Loss (Adaptive vs. Normal)', fontsize=18)
-    plt.plot(iters, loss_th_adapt, label='Adaptive Attack')
+    plt.plot(iters2, loss_th_adapt, label='Adaptive Attack')
     plt.plot(iters, loss_th_normal, label='Normal Attack')
 
     plt.legend()
     print(plt.gca().get_ylim(), plt.gca().get_xlim())
     plt.xlabel('Iteration', fontsize=14)
-    plt.ylabel('Threshold Loss', fontsize=14)
+    plt.ylabel('log of Threshold Loss', fontsize=14)
     #plt.ylabel('WER (%)', fontsize=14)
     plt.show()
 

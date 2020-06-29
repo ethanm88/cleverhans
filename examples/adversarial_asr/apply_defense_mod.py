@@ -323,7 +323,7 @@ def save_audios(factor, index_loop):
 
             if x == 0:
                 for m in range(batch_size):
-                    data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage2' + '.wav'
+                    data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage2_actual' + '.wav'
 
 
 

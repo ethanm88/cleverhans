@@ -22,20 +22,22 @@ def main():
     loss_th_normal = np.log(loss_th_normal)
     iters = range(0,4000, 10)
 
-    plt.title('Alphas')
+    plt.title('Alphas (Adaptive vs. Normal)',fontsize=18)
     plt.plot(iters, alpha_adapt, label='Adaptive Attack')
     plt.plot(iters, alpha_normal, label='Normal Attack')
     plt.xlabel('Iteration', fontsize=14)
+    plt.ylabel('Alpha', fontsize=14)
     plt.legend()
     plt.show()
 
-    plt.title('Threshold Loss')
+    plt.title('Threshold Loss (Adaptive vs. Normal)', fontsize=18)
     plt.plot(iters, loss_th_adapt, label='Adaptive Attack')
     plt.plot(iters, loss_th_normal, label='Normal Attack')
 
     plt.legend()
     print(plt.gca().get_ylim(), plt.gca().get_xlim())
     plt.xlabel('Iteration', fontsize=14)
+    plt.ylabel('Threshold Loss', fontsize=14)
     #plt.ylabel('WER (%)', fontsize=14)
     plt.show()
 

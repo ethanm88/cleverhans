@@ -121,7 +121,7 @@ def main(argv):
 
         for i in range(batch_size):
             # save adv examples:
-            adv_example = adv_example_lst[0]
+            adv_example = adv_example_lst
             print("example: {}".format(i))
 
 

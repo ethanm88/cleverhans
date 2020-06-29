@@ -29,7 +29,7 @@ flags.DEFINE_integer('num_iter_stage2', '6000', 'number of iterations in stage 2
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
 
-file_name = 'final_adpative.pkl'
+
 
 
 def ReadFromWav(data, batch_size):
@@ -94,6 +94,7 @@ def ReadFromWav(data, batch_size):
     return raw_audio, audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 def main(argv):
+    file_name = 'adaptive_stage_1.pkl'
     pkl_file = open(file_name, 'rb')
     adv_example_lst = pickle.load(pkl_file)
     print('Type', type(adv_example_lst))
@@ -126,7 +127,7 @@ def main(argv):
 
 
             name, _ = data_sub[0, i].split(".")
-            saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2_actual.wav"
+            saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
             #adv_example[i] = adv_example[i] / 32768.
             print('size', np.array(adv_example[i][:lengths[i]]).shape)
 

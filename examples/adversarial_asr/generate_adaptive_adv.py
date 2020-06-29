@@ -35,7 +35,7 @@ flags.DEFINE_integer('batch_size', '1', 'batch size')
 flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
-flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
+flags.DEFINE_integer('num_iter_stage2', '6000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
 
@@ -211,7 +211,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100, lr_stage2=0.1, num_iter_stage1=1000, num_iter_stage2=4000, th=None,
+                 lr_stage1=100, lr_stage2=0.1, num_iter_stage1=1000, num_iter_stage2=6000, th=None,
                  psd_max_ori=None):
 
         self.sess = sess
@@ -453,7 +453,7 @@ class Attack:
         clock = 0
         min_th = 0.000005
         for i in range(MAX): # changed - start at 20000
-
+            '''
             if i == (2000) or i == 0:
                 import dill
                 a = []
@@ -506,7 +506,7 @@ class Attack:
                     print(dl)
                     var_dict = {'delta_large': dl}
                     dill.dump(var_dict, file)
-
+            '''
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
@@ -523,7 +523,7 @@ class Attack:
                          self.lr_stage2: lr_stage2}
             #losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
-            if i == 3000:
+            if i == 4000: # 6000 iterations now
                 # min_th = -np.inf
                 lr_stage2 = 0.1
                 feed_dict = {self.input_tf: noisy_audios[i % 100],
@@ -689,6 +689,12 @@ def main(argv):
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2.wav"
                     adv_example[i] = adv_example[i] / 32768.
                     print('size', np.array(adv_example[i][:lengths[i]]).size)
+
+                    file_name = 'final_adpative.pkl'
+                    output = open(file_name, 'wb')
+                    pickle.dump(adv_example, output)
+                    output.close()
+
                     wav.write(saved_name, 16000, (np.array(adv_example[i][:lengths[i]])).transpose())
                     print(saved_name)
 

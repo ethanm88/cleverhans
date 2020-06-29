@@ -95,7 +95,7 @@ def ReadFromWav(data, batch_size):
 def main(argv):
     pkl_file = open(file_name, 'rb')
     adv_example_lst = pickle.load(pkl_file)
-    print('Type', type(adv_example))
+    print('Type', type(adv_example_lst))
     print(np.array(adv_example_lst[0]).shape)
     print(adv_example_lst)
     pkl_file.close()

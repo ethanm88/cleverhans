@@ -15,7 +15,7 @@ from absl import app
 
 flags.DEFINE_string('input', 'read_data.txt',
                     'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
-flags.DEFINE_integer('batch_size', '5',
+flags.DEFINE_integer('batch_size', '1',
                      'batch_size to do the testing')
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
@@ -141,6 +141,7 @@ def main(argv):
                 wer_adv = 0
                 wer_benign = 0
                 print("Factor: " + str(FLAGS.factor))
+                num_loops = 1
                 for l in range(int(num_loops)):
                     #l = l+1
                     data_sub = data[:, l * batch_size:(l + 1) * batch_size]

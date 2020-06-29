@@ -121,13 +121,13 @@ def main(argv):
 
         for i in range(batch_size):
             # save adv examples:
-            adv_example = adv_example_lst
+            adv_example = adv_example_lst[0]
             print("example: {}".format(i))
 
 
             name, _ = data_sub[0, i].split(".")
             saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2_actual.wav"
-            adv_example[i] = adv_example[i] / 32768.
+            #adv_example[i] = adv_example[i] / 32768.
             print('size', np.array(adv_example[i][:lengths[i]]).shape)
 
 

@@ -509,7 +509,10 @@ class Attack:
             '''
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
-                noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
+                if i >= 4000:
+                    noisy_audios = read_noisy(num_loop, batch_size, int((i-4000) / 100))
+                else:
+                    noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
             feed_dict = {self.input_tf: noisy_audios[i % 100],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,

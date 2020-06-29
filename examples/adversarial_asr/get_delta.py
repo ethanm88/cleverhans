@@ -131,7 +131,7 @@ def main(argv):
             print('size', np.array(adv_example[i][:lengths[i]]).shape)
 
 
-            wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
+            wav.write(saved_name, 16000, (np.array(adv_example[i][:lengths[i]])).transpose())
             print(saved_name)
 
 if __name__ == '__main__':

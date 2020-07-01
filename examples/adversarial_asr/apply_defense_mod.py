@@ -378,7 +378,8 @@ def save_audios(factor, index_loop):
                     print(len(time_series1), " ", len(time_series))
 
 
-                    final_time_series = time_series + time_series1
+                    #final_time_series = time_series + time_series1
+                    final_time_series = time_series1
                     print('size', numpy.array(final_time_series).shape)
 
                     # added

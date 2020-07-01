@@ -14,6 +14,7 @@ from absl import flags
 from absl import app
 import scipy
 import random
+import pickle
 from pydub import AudioSegment
 import copy
 
@@ -378,6 +379,20 @@ def save_audios(factor, index_loop):
 
 
                     final_time_series = time_series + time_series1
+                    print('size', numpy.array(final_time_series).shape)
+
+                    # added
+                    file_name = './noisy_data/defensive_' + str(0) + '.pkl'
+                    pkl_file = open(file_name, 'rb')
+                    all_noisy = pickle.load(pkl_file)
+                    pkl_file.close()
+                    key = str(2) + '_' + str(int(0)) + '_' + str(0)
+                    first = (all_noisy[key])
+
+                    print('size2', numpy.array(first).shape)
+
+
+
                     if x == 0:
                         adv_time_series.append(final_time_series)
                     else:

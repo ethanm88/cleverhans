@@ -383,7 +383,7 @@ class Attack:
                         rescale[ii] *= .8
 
                         # save the best adversarial example
-                        final_deltas[ii] = actual_input[ii]
+                        final_deltas[ii] = new_input[ii]
 
                         print("Iteration i=%d, worked ii=%d celoss=%f bound=%f" % (
                             i, ii, cl[ii], FLAGS.initial_bound * rescale[ii]))
@@ -391,7 +391,7 @@ class Attack:
 
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
-                    final_deltas[ii] = actual_input[ii]
+                    final_deltas[ii] = new_input[ii]
 
             if i % 10 == 0:
                 print("ten iterations take around {} ".format(clock))
@@ -645,10 +645,11 @@ def main(argv):
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
-                '''
+                #'''
                 adv_example = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                    masks_freq, l, data_sub, FLAGS.lr_stage2)
-                file_name = 'adaptive_stage_1.pkl'
+
+                file_name = 'adaptive_stage_1_2.pkl'
                 output = open(file_name, 'wb')
                 pickle.dump(adv_example, output)
                 output.close()
@@ -657,10 +658,11 @@ def main(argv):
                     print("Final distortion for stage 1",
                           np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_2.wav"
                     adv_example_float = adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(adv_example_float[:lengths[i]]))
                     print(saved_name)
+                #'''
                 '''
                 file_name = 'adaptive_stage_1.pkl'
                 pkl_file = open(file_name, 'rb')
@@ -700,7 +702,7 @@ def main(argv):
 
                     wav.write(saved_name, 16000, (np.array(adv_example[i][:lengths[i]])).transpose())
                     print(saved_name)
-
+                '''
 
 if __name__ == '__main__':
     app.run(main)

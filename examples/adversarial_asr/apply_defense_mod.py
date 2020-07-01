@@ -392,7 +392,7 @@ def save_audios(factor, index_loop):
                     print('size2', numpy.array(first).shape)
 
 
-                    final_time_series = first
+                    #final_time_series = first
                     if x == 0:
                         adv_time_series.append(final_time_series)
                     else:

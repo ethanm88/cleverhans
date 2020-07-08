@@ -369,16 +369,18 @@ class Attack:
                     (self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
 
-                print("Every:")
-                print("iteration_Test: %d" % (i))
-                print("loss_ce_Test: %f" % (cl[ii]))
-
-
-                with open("loss_ce.txt", "a") as text_file:
-                    text_file.write(str(cl[ii]) + "\n")
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
+
+                if i%10==0:
+                    print("Every:")
+                    print("iteration_Test: %d" % (i))
+                    print("loss_ce_Test: %f" % (cl[ii]))
+
+                    with open("loss_ce.txt", "a") as text_file:
+                        text_file.write(str(cl[ii]) + "\n")
+
                 if i % 50 == 0:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
                     print("targ:{}".format(trans[ii].lower()))

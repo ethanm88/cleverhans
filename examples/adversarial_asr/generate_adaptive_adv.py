@@ -44,6 +44,7 @@ flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportiona
 
 flags.DEFINE_integer('num_counter', '2', 'the initial number of required successful noise samples')
 flags.DEFINE_integer('num_goal', '10', 'the initial number of noise samples')
+flags.DEFINE_integer('max_delta', '300', 'the max delta added to the max l infinity norm')
 
 FLAGS = flags.FLAGS
 
@@ -398,7 +399,7 @@ class Attack:
                         rescale = sess.run(self.rescale)
                         if rescale[ii] * FLAGS.initial_bound > np.max(np.abs(d[ii])):
                             rescale[ii] = np.max(np.abs(d[ii])) / FLAGS.initial_bound
-                        rescale[ii] *= .8
+                        rescale[ii] *= .8 # maybe change this
 
                         # save the best adversarial example
                         final_deltas[ii] = new_input[ii]

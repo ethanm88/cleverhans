@@ -492,7 +492,7 @@ class Attack:
                 apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
-                
+
                 print("Every:")
                 print("iteration_Test: %d" % (i))
                 print("loss_ce_Test: %f" % (cl[ii]))

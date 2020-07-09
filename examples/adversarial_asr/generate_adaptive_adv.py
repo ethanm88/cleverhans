@@ -34,7 +34,7 @@ flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversa
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_integer('batch_size', '1', 'batch size')
-flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
+flags.DEFINE_float('lr_stage1', '50', 'learning_rate for stage 1')
 flags.DEFINE_float('lr_stage1_robust', '5', 'learning_rate for stage 1_robust')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '2000', 'number of iterations in stage 1')
@@ -227,7 +227,7 @@ class Attack:
         self.num_iter_stage1_robust = num_iter_stage1_robust
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
-        self.lr_stage1 = lr_stage1
+        #self.lr_stage1 = lr_stage1
 
         tf.set_random_seed(1234)
         params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
@@ -253,7 +253,7 @@ class Attack:
             self.noise = tf.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
             self.maxlen = tf.placeholder(np.int32)
             self.lr_stage2 = tf.placeholder(np.float32)
-            #self.lr_stage1 = tf.placeholder(np.float32)
+            self.lr_stage1 = tf.placeholder(np.float32)
             # variable
             self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32) * FLAGS.initial_bound, name='qq_rescale')
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.0001, name='qq_alpha')
@@ -301,7 +301,7 @@ class Attack:
 
     def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate,
                       masks, masks_freq, num_loop,
-                      data, lr_stage2):
+                      data, lr_stage2, lr_stage1):
         sess = self.sess
         # initialize and load the pretrained model
         sess.run(tf.initializers.global_variables())
@@ -329,8 +329,8 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise,
                      self.maxlen: maxlen,
-                     self.lr_stage2: lr_stage2
-                     #self.lr_stage1: FLAGS.lr_stage1
+                     self.lr_stage2: lr_stage2,
+                     self.lr_stage1: lr_stage1
                      }
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
@@ -363,8 +363,8 @@ class Attack:
                          self.mask_freq: masks_freq,
                          self.noise: noise,
                          self.maxlen: maxlen,
-                         self.lr_stage2: lr_stage2
-                         #self.lr_stage1: FLAGS.lr_stage1
+                         self.lr_stage2: lr_stage2,
+                         self.lr_stage1: lr_stage1
                          }
             #losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
@@ -773,7 +773,7 @@ def main(argv):
                     data_sub, batch_size)
                 
                 adv_example, perturb = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
-                                                   masks_freq, l, data_sub, FLAGS.lr_stage2)
+                                                   masks_freq, l, data_sub, FLAGS.lr_stage2, FLAGS.lr_stage1)
 
 
 

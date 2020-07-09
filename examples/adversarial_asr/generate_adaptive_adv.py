@@ -329,7 +329,9 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise,
                      self.maxlen: maxlen,
-                     self.lr_stage2: lr_stage2}
+                     self.lr_stage2: lr_stage2,
+                     self.lr_stage1: FLAGS.lr_stage1
+                     }
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
         # show the initial predictions
@@ -351,7 +353,7 @@ class Attack:
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, int(i / 100))
-            feed_dict = {self.input_tf: noisy_audios[i % 100],
+            feed_dict = {self.input_tf: noisy_audios[0],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
                          self.sample_rate_tf: sample_rate,
@@ -361,7 +363,9 @@ class Attack:
                          self.mask_freq: masks_freq,
                          self.noise: noise,
                          self.maxlen: maxlen,
-                         self.lr_stage2: lr_stage2}
+                         self.lr_stage2: lr_stage2,
+                         self.lr_stage1: FLAGS.lr_stage1
+                         }
             #losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
@@ -376,12 +380,17 @@ class Attack:
                 # print out the prediction each 100 iterations
 
                 if i%10==0:
+
                     print("Every:")
                     print("iteration_Test: %d" % (i))
                     print("loss_ce_Test: %f" % (cl[ii]))
+                    print("Current distortion",
+                          np.max(np.abs(new_input[ii][:lengths[ii]] - audios[ii, :lengths[ii]])))
 
                     with open("loss_ce.txt", "a") as text_file:
                         text_file.write(str(cl[ii]) + "\n")
+                    with open("distortion.txt", "a") as text_file:
+                        text_file.write(str(np.max(np.abs(new_input[ii][:lengths[ii]] - audios[ii, :lengths[ii]]))) + "\n")
 
                 if i % 50 == 0:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))

@@ -779,12 +779,14 @@ def main(argv):
                 # read the adversarial examples saved in stage 1
 
                 #read previous
-                name, _ = data_sub[0, i].split(".")
-                saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
-                sample_rate_np, adv_example = wav.read(saved_name)
+                adv_example = np.array()
+                for i in range(batch_size):
+                    name, _ = data_sub[0, i].split(".")
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
+                    sample_rate_np, adv_example = wav.read(saved_name)
 
-                if max(adv_example) < 1:
-                    adv_example = adv_example * 32768
+                    if max(adv_example) < 1:
+                        adv_example = adv_example * 32768
 
 
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])

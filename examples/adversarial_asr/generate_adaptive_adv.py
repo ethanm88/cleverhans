@@ -783,7 +783,7 @@ def main(argv):
 
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_perturb.wav"
                     sample_rate_np, perturb = wav.read(saved_name)
 
                     _, audio_orig = wav.read("./" + str(name) + ".wav")

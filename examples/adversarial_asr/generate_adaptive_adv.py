@@ -766,7 +766,7 @@ def main(argv):
             for l in range(num_loops):
 
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                '''
+
                 # stage 1
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
@@ -839,7 +839,7 @@ def main(argv):
 
                     pickle.dump(save_dict, output)
                     output.close()
-
+                '''
                 '''
                 file_name = 'adaptive_stage_1_robust.pkl'
                 pkl_file = open(file_name, 'rb')

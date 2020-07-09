@@ -324,9 +324,18 @@ def save_audios(factor, index_loop):
 
             if x == 0:
                 for m in range(batch_size):
-                    data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage1' + '.wav'
-
-
+                    #data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage1' + '.wav'
+                    name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
+                    perturb_name = name + '_adaptive_stage1_perturb' + '.wav'
+                    sample_rate_np, delta = wav.read(perturb_name)
+                    _, audio_orig = wav.read("./" + str(name) + ".wav")
+                    if max(delta) < 1:
+                        delta = delta * 32768
+                    audio_np = audio_orig + delta
+                    combined_adv = audio_np[i] / 32768.
+                    wav.write(name+'_adaptive_combined.wav', 16000, np.array(np.clip(combined_adv[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
+                    data_new[0][m] = name+'_adaptive_combined.wav'
+                    print(name+'_adaptive_combined.wav')
 
             raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
             psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)

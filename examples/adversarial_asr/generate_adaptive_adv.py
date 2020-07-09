@@ -749,12 +749,12 @@ def main(argv):
             for l in range(num_loops):
 
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-
+                '''
                 # stage 1
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
-                #'''
+                
                 adv_example, perturb = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                    masks_freq, l, data_sub, FLAGS.lr_stage2)
 
@@ -774,15 +774,25 @@ def main(argv):
                     perturb_float = perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
-
+                '''
                 # stage 2
                 # read the adversarial examples saved in stage 1
+
+                #read previous
+                name, _ = data_sub[0, i].split(".")
+                saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
+                sample_rate_np, adv_example = wav.read(saved_name)
+
+                if max(adv_example) < 1:
+                    adv_example = adv_example * 32768
+
+
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
                 rescales = np.max(np.abs(adv), axis=1) + FLAGS.max_delta
                 rescales = np.expand_dims(rescales, axis=1)
 
-                audios, trans, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
+                raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
                 adv_example, perturb = attack.attack_stage1_robust(adv, rescales, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                             masks_freq, l, data_sub, FLAGS.lr_stage2)
 
@@ -794,8 +804,7 @@ def main(argv):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust.wav"
                     adv_example_float = adv_example[i] / 32768.
-                    wav.write(saved_name, 16000,
-                              np.array(np.clip(adv_example_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
+                    wav.write(saved_name, 16000, np.array(np.clip(adv_example_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
 
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
                     perturb_float = perturb[i] / 32768.

@@ -34,7 +34,7 @@ flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversa
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_integer('batch_size', '1', 'batch size')
-flags.DEFINE_float('lr_stage1', '50', 'learning_rate for stage 1')
+flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
 flags.DEFINE_float('lr_stage1_robust', '5', 'learning_rate for stage 1_robust')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '2000', 'number of iterations in stage 1')
@@ -219,7 +219,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=50,lr_stage2=0.1, num_iter_stage1=2000, num_iter_stage1_robust = 4000, num_iter_stage2=6000, th=None,
+                 lr_stage1=100,lr_stage2=0.1, num_iter_stage1=2000, num_iter_stage1_robust = 4000, num_iter_stage2=6000, th=None,
                  psd_max_ori=None):
 
         self.sess = sess

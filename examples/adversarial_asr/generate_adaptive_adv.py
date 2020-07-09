@@ -219,7 +219,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=50, lr_stage1_robust = 5,lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust = 4000, num_iter_stage2=6000, th=None,
+                 lr_stage1=50,lr_stage2=0.1, num_iter_stage1=2000, num_iter_stage1_robust = 4000, num_iter_stage2=6000, th=None,
                  psd_max_ori=None):
 
         self.sess = sess
@@ -434,7 +434,7 @@ class Attack:
 
         # reassign the variables
         sess.run(tf.assign(self.delta_large, adv))
-        sess.run(tf.assign(self.lr_stage1, FLAGS.lr_stage1_robust))
+        #sess.run(tf.assign(self.lr_stage1, FLAGS.lr_stage1_robust))
         sess.run(tf.assign(self.rescale, rescales))
 
         noise = np.zeros(audios.shape)
@@ -452,7 +452,9 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise,
                      self.maxlen: maxlen,
-                     self.lr_stage2: lr_stage2}
+                     self.lr_stage2: lr_stage2,
+                     self.lr_stage1: FLAGS.lr_stage1_robust
+                     }
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
         # show the initial predictions
@@ -479,7 +481,7 @@ class Attack:
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, (int(20 + i / 100)%50))
 
-            feed_dict = {self.input_tf: noisy_audios[i % 100],
+            feed_dict = {self.input_tf: noisy_audios[0],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
                          self.sample_rate_tf: sample_rate,
@@ -489,7 +491,9 @@ class Attack:
                          self.mask_freq: masks_freq,
                          self.noise: noise,
                          self.maxlen: maxlen,
-                         self.lr_stage2: lr_stage2}
+                         self.lr_stage2: lr_stage2,
+                         self.lr_stage1: FLAGS.lr_stage1_robust
+                         }
 
             # Actually do the optimization
             sess.run(self.train1, feed_dict)
@@ -527,7 +531,7 @@ class Attack:
                             sum_counter += 1
                             print("succeed %d times for example %d" % (sum_counter, ii))
                             index = random.randint(0,99) # pick random noise sample
-                            feed_dict = {self.input_tf: noisy_audios_testing[index],
+                            feed_dict = {self.input_tf: noisy_audios[0],
                                          self.ori_input_tf: audios,
                                          self.tgt_tf: trans,
                                          self.sample_rate_tf: sample_rate,
@@ -537,7 +541,9 @@ class Attack:
                                          self.mask_freq: masks_freq,
                                          self.noise: noise,
                                          self.maxlen: maxlen,
-                                         self.lr_stage2: lr_stage2}
+                                         self.lr_stage2: lr_stage2,
+                                         self.lr_stage1: FLAGS.lr_stage1_robust
+                                         }
                             predictions = sess.run(self.decoded, feed_dict)
 
                         if sum_counter == num_counters[ii]:

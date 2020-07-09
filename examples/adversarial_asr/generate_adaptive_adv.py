@@ -637,7 +637,7 @@ class Attack:
 
             if i == 4000: # 6000 iterations now
                 # min_th = -np.inf
-                lr_stage2 = 0.1
+                #lr_stage2 = 0.1
                 feed_dict = {self.input_tf: noisy_audios[i % 100],
                              self.ori_input_tf: audios,
                              self.tgt_tf: trans,

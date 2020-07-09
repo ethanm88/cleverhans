@@ -227,7 +227,7 @@ class Attack:
         self.num_iter_stage1_robust = num_iter_stage1_robust
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
-        self.lr_stage1 = lr_stage1
+        #self.lr_stage1 = lr_stage1
 
         tf.set_random_seed(1234)
         params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
@@ -253,7 +253,7 @@ class Attack:
             self.noise = tf.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
             self.maxlen = tf.placeholder(np.int32)
             self.lr_stage2 = tf.placeholder(np.float32)
-
+            self.lr_stage1 = tf.placeholder(np.float32)
             # variable
             self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32) * FLAGS.initial_bound, name='qq_rescale')
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.0001, name='qq_alpha')

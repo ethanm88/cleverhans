@@ -779,7 +779,8 @@ def main(argv):
                 # read the adversarial examples saved in stage 1
 
                 #read previous
-                
+                raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
+
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"

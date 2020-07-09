@@ -254,12 +254,12 @@ class Attack:
             self.lr_stage2 = tf.placeholder(np.float32)
 
             # variable
-            self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32), name='qq_rescale')
+            self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32) * FLAGS.initial_bound, name='qq_rescale')
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.0001, name='qq_alpha')
 
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
-            self.apply_delta = tf.clip_by_value(self.delta, -FLAGS.initial_bound, FLAGS.initial_bound) * self.rescale
+            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
             self.new_input = self.apply_delta * self.mask + self.input_tf
 
             self.actual_input = self.apply_delta * self.mask + self.ori_input_tf

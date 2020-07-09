@@ -334,7 +334,7 @@ def save_audios(factor, index_loop):
                         delta = delta * 32768
                     audio_np = audio_orig + delta
                     combined_adv = audio_np[m] / 32768.
-                    wav.write(name+'_adaptive_combined.wav', 16000, np.array(np.clip(combined_adv[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
+                    wav.write(name+'_adaptive_combined.wav', 16000, np.array(np.clip(combined_adv[:lengths[m]], -2 ** 15, 2 ** 15 - 1)))
                     data_new[0][m] = name+'_adaptive_combined.wav'
                     print(name+'_adaptive_combined.wav')
 

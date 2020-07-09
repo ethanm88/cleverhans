@@ -784,11 +784,13 @@ def main(argv):
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
-                    sample_rate_np, adv_example = wav.read(saved_name)
+                    sample_rate_np, perturb = wav.read(saved_name)
 
-                    if max(adv_example) < 1:
-                        adv_example = adv_example * 32768
+                    _, audio_orig = wav.read("./" + str(name) + ".wav")
 
+                    if max(perturb) < 1:
+                        perturb = perturb * 32768
+                    adv_example = audio_orig + perturb
 
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios

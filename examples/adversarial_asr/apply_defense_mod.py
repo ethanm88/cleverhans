@@ -321,6 +321,7 @@ def save_audios(factor, index_loop):
 
             data_sub = data[:, l * batch_size:(l + 1) * batch_size]
             data_new = copy.deepcopy(data_sub)
+            raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
 
             if x == 0:
                 for m in range(batch_size):

@@ -510,8 +510,7 @@ class Attack:
                      self.new_input), feed_dict)
 
             if i % 50 == 0:
-                noisy_audios_testing = read_noisy(num_loop, batch_size, random.randint(0,
-                                                                                       49))  # get random noise file - move into loop when get better gpu
+                noisy_audios_testing = read_noisy(num_loop, batch_size, random.randint(0,49))  # get random noise file - move into loop when get better gpu
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
@@ -520,7 +519,7 @@ class Attack:
                     print("Every:")
                     print("iteration_Test: %d" % (i))
                     print("loss_ce_Test: %f" % (cl[ii]))
-
+                    print("Current Distortion", np.max(np.abs(apply_delta[ii])))
                     with open("loss_ce.txt", "a") as text_file:
                         text_file.write(str(cl[ii]) + "\n")
 
@@ -766,7 +765,7 @@ def main(argv):
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
-
+                '''
                 adv_example, perturb = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch,
                                                             psd_max_batch, maxlen, sample_rate, masks,
                                                             masks_freq, l, data_sub, FLAGS.lr_stage2, FLAGS.lr_stage1)
@@ -786,7 +785,7 @@ def main(argv):
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
                 '''
-                # stage 2
+                # stage 1_robust
                 # read the adversarial examples saved in stage 1
 
                 #read previous
@@ -833,7 +832,7 @@ def main(argv):
 
                     pickle.dump(save_dict, output)
                     output.close()
-                '''
+
                 '''
                 file_name = 'adaptive_stage_1_robust.pkl'
                 pkl_file = open(file_name, 'rb')

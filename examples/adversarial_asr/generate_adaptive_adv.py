@@ -416,7 +416,7 @@ class Attack:
                         final_perturb[ii] = apply_delta[ii]
 
                         print("Iteration i=%d, worked ii=%d celoss=%f bound=%f" % (
-                            i, ii, cl[ii], FLAGS.initial_bound * rescale[ii]))
+                            i, ii, cl[ii], rescale[ii]))
                         sess.run(tf.assign(self.rescale, rescale))
 
                 # in case no final_delta return

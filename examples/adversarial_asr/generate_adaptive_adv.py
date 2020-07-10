@@ -404,12 +404,12 @@ class Attack:
 
                     if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                         print("-------------------------------True--------------------------")
-
-                        # update rescale
                         rescale = sess.run(self.rescale)
-                        if rescale[ii] * FLAGS.initial_bound > np.max(np.abs(d[ii])):
-                            rescale[ii] = np.max(np.abs(d[ii])) / FLAGS.initial_bound
-                        rescale[ii] *= .8 # maybe change this
+                        # update rescale
+                        if i % 10 == 0:
+                            if rescale[ii]  > np.max(np.abs(d[ii])):
+                                rescale[ii] = np.max(np.abs(d[ii]))
+                            rescale[ii] *= .8
 
                         # save the best adversarial example
                         final_deltas[ii] = new_input[ii]
@@ -531,7 +531,7 @@ class Attack:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
                     print("targ:{}".format(trans[ii].lower()))
                     print("true: {}".format(data[1, ii].lower()))
-                    # print("rescale: {}".format(sess.run(self.rescale[ii])))
+                    print("rescale: {}".format(sess.run(self.rescale[ii])))
 
                 sum_counter = 0
                 if i % 10 == 0:

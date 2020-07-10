@@ -14,6 +14,8 @@ from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
 import librosa
+import random
+from google.colab import files
 
 # data directory
 flags.DEFINE_string("root_dir", "./", "location of Librispeech")
@@ -31,11 +33,17 @@ flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_integer('batch_size', '1', 'batch size')
 flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
+flags.DEFINE_float('lr_stage1_robust', '5', 'learning_rate for stage 1_robust')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
-flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
-flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
+flags.DEFINE_integer('num_iter_stage1', '2000', 'number of iterations in stage 1')
+flags.DEFINE_integer('num_iter_stage1_robust', '4000', 'number of iterations in stage 1_robust')
+flags.DEFINE_integer('num_iter_stage2', '6000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
+
+flags.DEFINE_integer('num_counter', '2', 'the initial number of required successful noise samples')
+flags.DEFINE_integer('num_goal', '10', 'the initial number of noise samples')
+flags.DEFINE_integer('max_delta', '300', 'the max delta added to the max l infinity norm')
 
 FLAGS = flags.FLAGS
 
@@ -209,14 +217,16 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100, lr_stage2=0.1, num_iter_stage1=1000, num_iter_stage2=4000, th=None,
+                 lr_stage1=100, lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust=4000, num_iter_stage2=6000,
+                 th=None,
                  psd_max_ori=None):
 
         self.sess = sess
         self.num_iter_stage1 = num_iter_stage1
+        self.num_iter_stage1_robust = num_iter_stage1_robust
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
-        self.lr_stage1 = lr_stage1
+        # self.lr_stage1 = lr_stage1
 
         tf.set_random_seed(1234)
         params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
@@ -242,10 +252,11 @@ class Attack:
             self.noise = tf.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
             self.maxlen = tf.placeholder(np.int32)
             self.lr_stage2 = tf.placeholder(np.float32)
-
+            self.lr_stage1 = tf.placeholder(np.float32)
             # variable
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32), name='qq_rescale')
-            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.05, name='qq_alpha')
+
+            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.0001, name='qq_alpha')
 
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
@@ -290,7 +301,7 @@ class Attack:
 
     def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate,
                       masks, masks_freq, num_loop,
-                      data, lr_stage2):
+                      data, lr_stage2, lr_stage1):
         sess = self.sess
         # initialize and load the pretrained model
         sess.run(tf.initializers.global_variables())
@@ -298,7 +309,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
 
         # reassign the variables
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
+        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32) * FLAGS.initial_bound))
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
 
         # noise = np.random.normal(scale=2, size=audios.shape)
@@ -318,7 +329,9 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise,
                      self.maxlen: maxlen,
-                     self.lr_stage2: lr_stage2}
+                     self.lr_stage2: lr_stage2,
+                     self.lr_stage1: lr_stage1
+                     }
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
         # show the initial predictions
@@ -333,13 +346,14 @@ class Attack:
         MAX = self.num_iter_stage1
         loss_th = [np.inf] * self.batch_size
         final_deltas = [None] * self.batch_size
+        final_perturb = [None] * self.batch_size
         clock = 0
 
         for i in range(MAX):
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, int(i / 100))
-            feed_dict = {self.input_tf: noisy_audios[i % 100],
+            feed_dict = {self.input_tf: noisy_audios[0],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
                          self.sample_rate_tf: sample_rate,
@@ -349,18 +363,34 @@ class Attack:
                          self.mask_freq: masks_freq,
                          self.noise: noise,
                          self.maxlen: maxlen,
-                         self.lr_stage2: lr_stage2}
-            losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
+                         self.lr_stage2: lr_stage2,
+                         self.lr_stage1: lr_stage1
+                         }
+            # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
-                actual_input, d, cl, predictions, new_input = sess.run(
-                    (self.actual_input, self.delta, self.celoss, self.decoded,
+                apply_delta, d, cl, predictions, new_input = sess.run(
+                    (self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
+
+                if i % 10 == 0:
+                    print("Every:")
+                    print("iteration_Test: %d" % (i))
+                    print("loss_ce_Test: %f" % (cl[ii]))
+                    print("Current distortion",
+                          np.max(np.abs(new_input[ii][:lengths[ii]] - audios[ii, :lengths[ii]])))
+
+                    with open("loss_ce.txt", "a") as text_file:
+                        text_file.write(str(cl[ii]) + "\n")
+                    with open("distortion.txt", "a") as text_file:
+                        text_file.write(
+                            str(np.max(np.abs(new_input[ii][:lengths[ii]] - audios[ii, :lengths[ii]]))) + "\n")
+
                 if i % 50 == 0:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
                     print("targ:{}".format(trans[ii].lower()))
@@ -373,15 +403,14 @@ class Attack:
 
                     if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                         print("-------------------------------True--------------------------")
-
-                        # update rescale
                         rescale = sess.run(self.rescale)
                         if rescale[ii] * FLAGS.initial_bound > np.max(np.abs(d[ii])):
                             rescale[ii] = np.max(np.abs(d[ii])) / FLAGS.initial_bound
                         rescale[ii] *= .8
-
+                        
                         # save the best adversarial example
-                        final_deltas[ii] = actual_input[ii]
+                        final_deltas[ii] = new_input[ii]
+                        final_perturb[ii] = apply_delta[ii]
 
                         print("Iteration i=%d, worked ii=%d celoss=%f bound=%f" % (
                             i, ii, cl[ii], FLAGS.initial_bound * rescale[ii]))
@@ -389,7 +418,8 @@ class Attack:
 
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
-                    final_deltas[ii] = actual_input[ii]
+                    final_deltas[ii] = new_input[ii]
+                    final_perturb[ii] = apply_delta[ii]
 
             if i % 10 == 0:
                 print("ten iterations take around {} ".format(clock))
@@ -397,7 +427,155 @@ class Attack:
 
             clock += time.time() - now
 
-        return final_deltas
+        return final_deltas, final_perturb
+
+    def attack_stage1_robust(self, adv, rescales, raw_audio, batch_size, lengths, audios, trans, th_batch,
+                             psd_max_batch, maxlen, sample_rate,
+                             masks, masks_freq, num_loop,
+                             data, lr_stage2):
+        sess = self.sess
+        # initialize and load the pretrained model
+        sess.run(tf.initializers.global_variables())
+        saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
+        saver.restore(sess, FLAGS.checkpoint)
+
+        # reassign the variables
+        sess.run(tf.assign(self.delta_large, adv))
+        # sess.run(tf.assign(self.lr_stage1, FLAGS.lr_stage1_robust))
+        sess.run(tf.assign(self.rescale, rescales))
+
+        noise = np.zeros(audios.shape)
+
+        noisy_audios = read_noisy(num_loop, batch_size, 20)  # initial noise
+        noisy_audios_testing = read_noisy(num_loop, batch_size, random.randint(0, 49))  # noise for robustness testing
+
+        feed_dict = {self.input_tf: noisy_audios[0],
+                     self.ori_input_tf: audios,
+                     self.tgt_tf: trans,
+                     self.sample_rate_tf: sample_rate,
+                     self.th: th_batch,
+                     self.psd_max_ori: psd_max_batch,
+                     self.mask: masks,
+                     self.mask_freq: masks_freq,
+                     self.noise: noise,
+                     self.maxlen: maxlen,
+                     self.lr_stage2: lr_stage2,
+                     self.lr_stage1: FLAGS.lr_stage1_robust
+                     }
+        losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
+
+        # show the initial predictions
+        for i in range(self.batch_size):
+            print("example: {}, loss: {}".format(num_loop * self.batch_size + i, losses[i]))
+            print("pred:{}".format(predictions['topk_decoded'][i, 0]))
+            print("targ:{}".format(trans[i].lower()))
+            print("true: {}".format(data[1, i].lower()))
+
+        # We'll make a bunch of iterations of gradient descent here
+        now = time.time()
+        MAX = self.num_iter_stage1_robust
+        loss_th = [np.inf] * self.batch_size
+        final_deltas = [None] * self.batch_size
+        final_perturb = [None] * self.batch_size
+
+        num_counters = [FLAGS.num_counter] * self.batch_size
+        num_goal = [FLAGS.num_goal] * self.batch_size
+
+        clock = 0
+
+        for i in range(MAX):
+            now = time.time()
+            if i % 100 == 0 and i != 0:  # load new file every 100 iterations
+                noisy_audios = read_noisy(num_loop, batch_size, (int(20 + i / 100) % 50))
+
+            feed_dict = {self.input_tf: noisy_audios[0],
+                         self.ori_input_tf: audios,
+                         self.tgt_tf: trans,
+                         self.sample_rate_tf: sample_rate,
+                         self.th: th_batch,
+                         self.psd_max_ori: psd_max_batch,
+                         self.mask: masks,
+                         self.mask_freq: masks_freq,
+                         self.noise: noise,
+                         self.maxlen: maxlen,
+                         self.lr_stage2: lr_stage2,
+                         self.lr_stage1: FLAGS.lr_stage1_robust
+                         }
+
+            # Actually do the optimization
+            sess.run(self.train1, feed_dict)
+            if i % 10 == 0:
+                apply_delta, d, cl, predictions, new_input = sess.run(
+                    (self.apply_delta, self.delta, self.celoss, self.decoded,
+                     self.new_input), feed_dict)
+
+            if i % 50 == 0:
+                noisy_audios_testing = read_noisy(num_loop, batch_size, random.randint(0,
+                                                                                       49))  # get random noise file - move into loop when get better gpu
+
+            for ii in range(self.batch_size):
+                # print out the prediction each 100 iterations
+
+                if i % 10 == 0:
+                    print("Every:")
+                    print("iteration_Test: %d" % (i))
+                    print("loss_ce_Test: %f" % (cl[ii]))
+
+                    with open("loss_ce.txt", "a") as text_file:
+                        text_file.write(str(cl[ii]) + "\n")
+
+                if i % 50 == 0:
+                    print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
+                    print("targ:{}".format(trans[ii].lower()))
+                    print("true: {}".format(data[1, ii].lower()))
+                    print("rescale: {}".format(sess.run(self.rescale[ii])))
+
+                sum_counter = 0
+                if i % 10 == 0:
+                    for counter in range(num_goal[ii]):
+                        if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
+                            sum_counter += 1
+                            print("succeed %d times for example %d" % (sum_counter, ii))
+                            index = random.randint(0, 99)  # pick random noise sample
+                            feed_dict = {self.input_tf: noisy_audios[0],
+                                         self.ori_input_tf: audios,
+                                         self.tgt_tf: trans,
+                                         self.sample_rate_tf: sample_rate,
+                                         self.th: th_batch,
+                                         self.psd_max_ori: psd_max_batch,
+                                         self.mask: masks,
+                                         self.mask_freq: masks_freq,
+                                         self.noise: noise,
+                                         self.maxlen: maxlen,
+                                         self.lr_stage2: lr_stage2,
+                                         self.lr_stage1: FLAGS.lr_stage1_robust
+                                         }
+                            predictions = sess.run(self.decoded, feed_dict)
+
+                        if sum_counter == num_counters[ii]:
+                            print("-------------------------------True--------------------------")
+                            print(" The num_counter is %d for example %d" % (num_counters[ii], ii))
+                            num_counters[ii] += 1
+                            if num_counters[ii] > num_goal[ii]:
+                                num_goal[ii] += 1
+                            # save the best adversarial example
+                            final_deltas[ii] = new_input[ii]
+                            final_perturb[ii] = apply_delta[ii]
+                            print("Stage 1_robust: save the example at iteration i=%d example ii=%d celoss=%f" % (
+                            i, ii, cl[ii]))
+
+                # in case no final_delta return
+                if (i == MAX - 1 and final_deltas[ii] is None):
+                    final_deltas[ii] = new_input[ii]
+                    final_perturb[ii] = apply_delta[ii]
+
+            if i % 10 == 0:
+                print("ten iterations take around {} ".format(clock))
+                clock = 0
+
+            clock += time.time() - now
+
+        return final_deltas, final_perturb
 
     def attack_stage2(self, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen,
                       sample_rate, masks, masks_freq,
@@ -409,7 +587,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
 
         sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
-        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.05))
+        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.0001))
 
         # reassign the variables
         sess.run(tf.assign(self.delta_large, adv))
@@ -449,11 +627,15 @@ class Attack:
         final_perturb = [None] * self.batch_size
         # final_th = [None] * self.batch_size
         clock = 0
-        min_th = 0.0005
-        for i in range(MAX):
+        min_th = 0.000005
+        for i in range(MAX):  # changed - start at 20000
+
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
-                noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
+                if i >= 4000:
+                    noisy_audios = read_noisy(num_loop, batch_size, int((i - 4000) / 100))
+                else:
+                    noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
             feed_dict = {self.input_tf: noisy_audios[i % 100],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
@@ -465,11 +647,11 @@ class Attack:
                          self.noise: noise,
                          self.maxlen: maxlen,
                          self.lr_stage2: lr_stage2}
-            losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
+            # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
-            if i == 3000:
+            if i == 4000:  # 6000 iterations now
                 # min_th = -np.inf
-                lr_stage2 = 0.1
+                # lr_stage2 = 0.1
                 feed_dict = {self.input_tf: noisy_audios[i % 100],
                              self.ori_input_tf: audios,
                              self.tgt_tf: trans,
@@ -484,7 +666,8 @@ class Attack:
 
             # Actually do the optimization
             sess.run(self.train2, feed_dict)
-
+            # print('Delta_large', self.delta_large)
+            # print('Alpha', self.alpha)
             if i % 10 == 0:
                 actual_input, d, cl, l, predictions, new_input = sess.run(
                     (self.actual_input, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
@@ -500,6 +683,17 @@ class Attack:
                     # print("example: {}".format(num_loop * self.batch_size + ii))
 
                     alpha = sess.run(self.alpha)
+                    print("Every:")
+                    print("iteration_Test: %d" % (i))
+                    print("alpha_Test: %f" % (alpha[ii]))
+                    print("loss_ce_Test: %f" % (cl[ii]))
+                    print("loss_th_Test: %f" % (l[ii]))
+
+                    with open("alpha.txt", "a") as text_file:
+                        text_file.write(str(alpha[ii]) + "\n")
+                    with open("loss_th.txt", "a") as text_file:
+                        text_file.write(str(l[ii]) + "\n")
+
                     if i % 100 == 0:
                         print("example: {}".format(num_loop * self.batch_size + ii))
                         print("iteration: %d, alpha: %f, loss_ce: %f, loss_th: %f" % (i, alpha[ii], cl[ii], l[ii]))
@@ -507,8 +701,10 @@ class Attack:
                     # if the network makes the targeted prediction
                     if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                         if l[ii] < loss_th[ii]:
-                            final_deltas[ii] = actual_input[ii]
-
+                            # final_deltas[ii] = new_input[ii]
+                            # actual_input = sess.run((self.actual_input), feed_dict)
+                            final_deltas[ii] = actual_input
+                            final_perturb = d
                             loss_th[ii] = l[ii]
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")
@@ -527,7 +723,9 @@ class Attack:
 
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
-                    final_deltas[ii] = actual_input[ii]
+                    # final_deltas[ii] = new_input[ii]
+                    # actual_input = sess.run((self.actual_input), feed_dict)
+                    final_deltas[ii] = actual_input
 
             if i % 500 == 0:
                 print("alpha is {}, loss_th is {}".format(final_alpha, loss_th))
@@ -547,7 +745,6 @@ def main(argv):
     batch_size = FLAGS.batch_size
     num_loops = num / batch_size
     assert num % batch_size == 0
-
 
     with tf.device("/gpu:0"):  # changed
         tfconf = tf.ConfigProto(allow_soft_placement=True)
@@ -570,11 +767,9 @@ def main(argv):
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
 
-                adv_example = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
-                                                   masks_freq, l, data_sub, FLAGS.lr_stage2)
-
-
-
+                adv_example, perturb = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch,
+                                                            psd_max_batch, maxlen, sample_rate, masks,
+                                                            masks_freq, l, data_sub, FLAGS.lr_stage2, FLAGS.lr_stage1)
 
                 # save the adversarial examples in stage 1
                 for i in range(batch_size):
@@ -586,8 +781,68 @@ def main(argv):
                     wav.write(saved_name, 16000, np.array(adv_example_float[:lengths[i]]))
                     print(saved_name)
 
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_perturb.wav"
+                    perturb_float = perturb[i] / 32768.
+                    wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
+                    print(saved_name)
+                '''
+                # stage 2
+                # read the adversarial examples saved in stage 1
+
+                #read previous
+                raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
+
+                for i in range(batch_size):
+                    name, _ = data_sub[0, i].split(".")
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_perturb.wav"
+                    sample_rate_np, perturb = wav.read(saved_name)
+
+                    _, audio_orig = wav.read("./" + str(name) + ".wav")
+
+                    if max(perturb) < 1:
+                        perturb = perturb * 32768
+                    adv_example = audios + perturb
+
+                adv = np.zeros([batch_size, FLAGS.max_length_dataset])
+                adv[:, :maxlen] = adv_example - audios
+                rescales = np.max(np.abs(adv), axis=1) + FLAGS.max_delta
+                rescales = np.expand_dims(rescales, axis=1)
+
+                raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
+                adv_example, perturb = attack.attack_stage1_robust(adv, rescales, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
+                                                            masks_freq, l, data_sub, FLAGS.lr_stage2)
 
 
+                # save the adversarial examples in stage 2 that can successfully attack a set of simulated rooms
+                for i in range(batch_size):
+                    print("Final distortion for stage 1_robust",
+                          np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))
+                    name, _ = data_sub[0, i].split(".")
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust.wav"
+                    adv_example_float = adv_example[i] / 32768.
+                    wav.write(saved_name, 16000, np.array(np.clip(adv_example_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
+
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
+                    perturb_float = perturb[i] / 32768.
+                    wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
+                    print(saved_name)
+
+                    file_name = 'adaptive_stage1_robust.pkl'
+                    output = open(file_name, 'wb')
+                    save_dict = {'perturb': perturb, 'robust_noisy': adv_example[i]}
+
+                    pickle.dump(save_dict, output)
+                    output.close()
+                '''
+                '''
+                file_name = 'adaptive_stage_1_robust.pkl'
+                pkl_file = open(file_name, 'rb')
+                adv_example = pickle.load(pkl_file)
+                print('Type',type(adv_example))
+                print(adv_example)
+                pkl_file.close()
+                '''
+                '''
                 # stage 2
                 # read the adversarial examples saved in stage 1
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
@@ -610,8 +865,16 @@ def main(argv):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2.wav"
                     adv_example[i] = adv_example[i] / 32768.
-                    wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
+                    print('size', np.array(adv_example[i][:lengths[i]]).size)
+
+                    file_name = 'final_adpative.pkl'
+                    output = open(file_name, 'wb')
+                    pickle.dump(adv_example, output)
+                    output.close()
+
+                    wav.write(saved_name, 16000, (np.array(adv_example[i][:lengths[i]])).transpose())
                     print(saved_name)
+                '''
 
 
 if __name__ == '__main__':

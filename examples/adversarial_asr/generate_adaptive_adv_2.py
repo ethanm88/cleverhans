@@ -309,7 +309,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
 
         # reassign the variables
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32) * FLAGS.initial_bound))
+        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
 
         # noise = np.random.normal(scale=2, size=audios.shape)
@@ -407,7 +407,7 @@ class Attack:
                         if rescale[ii] * FLAGS.initial_bound > np.max(np.abs(d[ii])):
                             rescale[ii] = np.max(np.abs(d[ii])) / FLAGS.initial_bound
                         rescale[ii] *= .8
-                        
+
                         # save the best adversarial example
                         final_deltas[ii] = new_input[ii]
                         final_perturb[ii] = apply_delta[ii]

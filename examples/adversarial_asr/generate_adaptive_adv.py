@@ -681,7 +681,7 @@ class Attack:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
                     print("targ:{}".format(trans[ii].lower()))
                     print("true: {}".format(data[1, ii].lower()))
-                    # print("rescale: {}".format(sess.run(self.rescale[ii])))
+                    print("rescale: {}".format(sess.run(self.rescale[ii])))
                 if i % 10 == 0:
                     # print("example: {}".format(num_loop * self.batch_size + ii))
 
@@ -840,7 +840,7 @@ def main(argv):
 
                     pickle.dump(save_dict, output)
                     output.close()
-                
+
                 '''
                 file_name = 'adaptive_stage_1_robust.pkl'
                 pkl_file = open(file_name, 'rb')

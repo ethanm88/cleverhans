@@ -513,7 +513,7 @@ class Attack:
 
 
 
-            if i % 50 == 0:
+            if i % 10 == 0:
                 noisy_audios_testing = read_noisy(num_loop, batch_size, random.randint(0,49))  # get random noise file - move into loop when get better gpu
 
             for ii in range(self.batch_size):

@@ -45,7 +45,7 @@ flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportiona
 
 flags.DEFINE_integer('num_counter', '2', 'the initial number of required successful noise samples')
 flags.DEFINE_integer('num_goal', '10', 'the initial number of noise samples')
-flags.DEFINE_integer('max_delta', '300', 'the max delta added to the max l infinity norm')
+flags.DEFINE_integer('max_delta', '100', 'the max delta added to the max l infinity norm')
 
 FLAGS = flags.FLAGS
 

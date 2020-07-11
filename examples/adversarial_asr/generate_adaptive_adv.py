@@ -540,7 +540,7 @@ class Attack:
                             sum_counter += 1
                             print("succeed %d times for example %d" % (sum_counter, ii))
                             index = random.randint(0,99) # pick random noise sample
-                            feed_dict = {self.input_tf: noisy_audios[0],
+                            feed_dict = {self.input_tf: noisy_audios_testing[0],
                                          self.ori_input_tf: audios,
                                          self.tgt_tf: trans,
                                          self.sample_rate_tf: sample_rate,

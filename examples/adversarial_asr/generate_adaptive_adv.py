@@ -539,8 +539,8 @@ class Attack:
                         if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                             sum_counter += 1
                             print("succeed %d times for example %d" % (sum_counter, ii))
-                            index = random.randint(0,99) # pick random noise sample
-                            feed_dict = {self.input_tf: noisy_audios_testing[index],
+
+                            feed_dict = {self.input_tf: noisy_audios_testing[counter],
                                          self.ori_input_tf: audios,
                                          self.tgt_tf: trans,
                                          self.sample_rate_tf: sample_rate,

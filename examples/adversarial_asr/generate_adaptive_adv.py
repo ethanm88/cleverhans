@@ -490,7 +490,7 @@ class Attack:
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
                 noisy_audios = read_noisy(num_loop, batch_size, (int(20 + i / 100)%50))
 
-            feed_dict = {self.input_tf: noisy_audios[0],
+            feed_dict = {self.input_tf: noisy_audios[i%100],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
                          self.sample_rate_tf: sample_rate,

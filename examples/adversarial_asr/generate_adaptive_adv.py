@@ -771,7 +771,7 @@ def main(argv):
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
-                
+                '''
                 adv_example, perturb = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                    masks_freq, l, data_sub, FLAGS.lr_stage2, FLAGS.lr_stage1)
 
@@ -792,6 +792,7 @@ def main(argv):
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
                 '''
+
                 # stage 2
                 # read the adversarial examples saved in stage 1
 
@@ -839,7 +840,7 @@ def main(argv):
 
                     pickle.dump(save_dict, output)
                     output.close()
-                '''
+                
                 '''
                 file_name = 'adaptive_stage_1_robust.pkl'
                 pkl_file = open(file_name, 'rb')

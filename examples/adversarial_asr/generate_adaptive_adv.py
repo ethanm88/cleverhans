@@ -484,10 +484,12 @@ class Attack:
         num_goal = [FLAGS.num_goal] * self.batch_size
 
         clock = 0
-
+        cur_file = 20
         for i in range(MAX):
             now = time.time()
+
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
+                cur_file = (int(20 + i / 100)%50)
                 noisy_audios = read_noisy(num_loop, batch_size, (int(20 + i / 100)%50))
 
             feed_dict = {self.input_tf: noisy_audios[i%100],
@@ -514,7 +516,10 @@ class Attack:
 
 
             if i % 10 == 0:
-                noisy_audios_testing = read_noisy(num_loop, batch_size, random.randint(0,49))  # get random noise file - move into loop when get better gpu
+                index = random.randint(0,49)
+                while index == cur_file:
+                    index = random.randint(0,49)
+                noisy_audios_testing = read_noisy(num_loop, batch_size, index)  # get random noise file - move into loop when get better gpu
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations

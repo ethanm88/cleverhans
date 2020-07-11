@@ -804,7 +804,7 @@ def main(argv):
 
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
-                rescales = np.max(np.abs(adv), axis=1) + FLAGS.max_delta/(FLAGS.initial_bound)
+                rescales = (np.max(np.abs(adv), axis=1) + FLAGS.max_delta)/(FLAGS.initial_bound)
                 rescales = np.expand_dims(rescales, axis=1)
 
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)

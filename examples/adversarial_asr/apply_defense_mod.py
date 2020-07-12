@@ -335,7 +335,7 @@ def save_audios(factor, index_loop):
         #psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
 
 
-       
+
 
         # types of defenses
         if FLAGS.type_defense == 2:

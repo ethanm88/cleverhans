@@ -293,7 +293,8 @@ def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw
         final_time_series = np.array(time_series_original + time_series_noisy)
         all_time_series.append(final_time_series.tolist())
     all_time_series = np.array([np.array(i) for i in all_time_series])
-    return normalize_input(all_time_series,batch_size, lengths)
+    #return normalize_input(all_time_series,batch_size, lengths)
+    return all_time_series
 
 
 def save_audios(factor, index_loop):
@@ -314,7 +315,7 @@ def save_audios(factor, index_loop):
 
         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
         data_new = copy.deepcopy(data_sub)
-        raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
+        #raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
 
         if FLAGS.adv:
             for m in range(batch_size):

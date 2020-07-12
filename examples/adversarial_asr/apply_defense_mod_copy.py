@@ -399,7 +399,7 @@ def save_audios(factor, index_loop):
                     pkl_file = open(file_name, 'rb')
                     all_noisy = pickle.load(pkl_file)
                     pkl_file.close()
-                    key = str(2) + '_' + str(int(0)) + '_' + str(0)
+                    key = str(random.randint(0,99)) + '_' + str(int(0)) + '_' + str(0)
                     first = (all_noisy[key])
 
                     print('size2', numpy.array(first).shape)

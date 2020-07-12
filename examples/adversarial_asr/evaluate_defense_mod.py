@@ -8,7 +8,7 @@ from tool import create_features, create_inputs
 import time
 from lingvo.core import cluster_factory
 from absl import flags
-import apply_defense_mod
+#import apply_defense_mod
 import  apply_defense_mod_copy
 
 

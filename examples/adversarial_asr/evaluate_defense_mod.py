@@ -9,6 +9,7 @@ import time
 from lingvo.core import cluster_factory
 from absl import flags
 import apply_defense_mod
+import  apply_defense_mod_copy
 
 
 from absl import app
@@ -37,7 +38,7 @@ def Read_input(data, batch_size, num_loop): # 0 = adv 1 = benign
         trans: an array includes the targeted transcriptions (batch_size,)
         masks_freq: a numpy array to mask out the padding features in frequency domain
     """
-    adv_time_series, benign_time_series = apply_defense_mod.save_audios(FLAGS.factor, num_loop)
+    adv_time_series, benign_time_series = apply_defense_mod_copy.save_audios(FLAGS.factor, num_loop)
     audios = []
     lengths = []
 

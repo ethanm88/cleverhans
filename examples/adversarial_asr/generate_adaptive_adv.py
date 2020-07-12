@@ -261,7 +261,7 @@ class Attack:
             self.lr_stage1 = tf.placeholder(np.float32)
             # variable
             self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32) * FLAGS.initial_bound, name='qq_rescale')
-            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.0001, name='qq_alpha')
+            self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.001, name='qq_alpha')
 
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
@@ -606,7 +606,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
 
         sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
-        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.0001))
+        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.001))
 
         # reassign the variables
         sess.run(tf.assign(self.delta_large, adv))

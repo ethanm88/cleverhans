@@ -490,6 +490,7 @@ class Attack:
 
         clock = 0
         cur_file = 20
+        print('Num Iters: ', MAX)
         for i in range(MAX):
             now = time.time()
 

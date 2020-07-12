@@ -322,7 +322,7 @@ def save_audios(factor, index_loop):
             data_sub = data[:, l * batch_size:(l + 1) * batch_size]
             data_new = copy.deepcopy(data_sub)
             raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
-
+            delta_x = numpy.array([0])
             if x == 0:
                 for m in range(batch_size):
                     #data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage1' + '.wav'
@@ -333,6 +333,7 @@ def save_audios(factor, index_loop):
                     if max(delta) < 1:
                         delta = delta * 32768
                     audio_np = audio_orig + delta
+                    delta_x = delta
                     combined_adv = audio_np / 32768.
                     wav.write(name+'_adaptive_combined.wav', 16000, np.array(np.clip(combined_adv[:lengths[m]], -2 ** 15, 2 ** 15 - 1)))
                     data_new[0][m] = name+'_adaptive_combined.wav'
@@ -404,7 +405,7 @@ def save_audios(factor, index_loop):
                     print('size2', numpy.array(first).shape)
 
 
-                    final_time_series = first
+                    final_time_series = first +delta_x
                     if x == 0:
                         adv_time_series.append(final_time_series)
                     else:

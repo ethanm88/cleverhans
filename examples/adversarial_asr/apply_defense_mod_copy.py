@@ -393,7 +393,7 @@ def save_audios(factor, index_loop):
                     print('size', numpy.array(final_time_series).shape)
 
                     # added
-                    '''
+
                     file_name = './noisy_data/defensive_' + str(0) + '.pkl'
                     pkl_file = open(file_name, 'rb')
                     all_noisy = pickle.load(pkl_file)
@@ -402,9 +402,9 @@ def save_audios(factor, index_loop):
                     first = (all_noisy[key])
 
                     print('size2', numpy.array(first).shape)
-                    '''
 
-                    #final_time_series = first
+
+                    final_time_series = first
                     if x == 0:
                         adv_time_series.append(final_time_series)
                     else:

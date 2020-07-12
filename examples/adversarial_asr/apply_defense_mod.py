@@ -311,104 +311,106 @@ def save_audios(factor, index_loop):
     for l in range(int(num_loops)):
         l = index_loop
 
-        for x in range(2): # apply to defense to both benign (1) and adv example (0)
 
-            if FLAGS.adv and (x == 1):
-                continue
-            elif (FLAGS.adv == False) and x == 0:
-                continue
+        data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+        data_new = copy.deepcopy(data_sub)
+        raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
 
+        if FLAGS.adv:
+            for m in range(batch_size):
+                #data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage1' + '.wav'
+                name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
+                perturb_name = name + '_adaptive_stage1_perturb' + '.wav'
+                sample_rate_np, delta = wav.read(perturb_name)
+                _, audio_orig = wav.read("./" + str(name) + ".wav")
+                if max(delta) < 1:
+                    delta = delta * 32768
+                audio_np = audio_orig + delta
+                combined_adv = audio_np / 32768.
+                wav.write(name+'_adaptive_combined.wav', 16000, np.array(np.clip(combined_adv[:lengths[m]], -2 ** 15, 2 ** 15 - 1)))
+                data_new[0][m] = name+'_adaptive_combined.wav'
+                print(name+'_adaptive_combined.wav')
 
-            data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-            data_new = copy.deepcopy(data_sub)
-            raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
-
-            if x == 0:
-                for m in range(batch_size):
-                    #data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage1' + '.wav'
-                    name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
-                    perturb_name = name + '_adaptive_stage1_perturb' + '.wav'
-                    sample_rate_np, delta = wav.read(perturb_name)
-                    _, audio_orig = wav.read("./" + str(name) + ".wav")
-                    if max(delta) < 1:
-                        delta = delta * 32768
-                    audio_np = audio_orig + delta
-                    combined_adv = audio_np / 32768.
-                    wav.write(name+'_adaptive_combined.wav', 16000, np.array(np.clip(combined_adv[:lengths[m]], -2 ** 15, 2 ** 15 - 1)))
-                    data_new[0][m] = name+'_adaptive_combined.wav'
-                    print(name+'_adaptive_combined.wav')
-
-            raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
-            psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
+        raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
+        #psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
 
 
-            #all_audios = apply_defensive_perturbation(batch_size, th_batch, audios, factor, lengths, raw_audio)
+       
 
-            # types of defenses
-            defense_time_series = [] # either adversarial or benign only for defense that are not our own
-            if FLAGS.type_defense == 2:
-                print('Type: Quant')
-                defense_time_series = np.array(quantization(batch_size, audios, 256., lengths))
+        # types of defenses
+        if FLAGS.type_defense == 2:
+            print('Type: Quant')
+            defense_time_series = np.array(quantization(batch_size, audios, 256., lengths))
+            if FLAGS.adv:
+                adv_time_series = defense_time_series
+            else:
+                benign_time_series = defense_time_series
+            return adv_time_series, benign_time_series
+
+        if FLAGS.type_defense == 1:
+            print('Type: MP3')
+            defense_time_series = np.array(MP3_compression(batch_size, data_new, data_sub))
+            if FLAGS.adv:
+                adv_time_series = defense_time_series
+            else:
+                benign_time_series = defense_time_series
+            return adv_time_series, benign_time_series
+
+        if FLAGS.type_defense == 0:
+            print('Type: Ours')
+            psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
+            noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw_audio, phase)
+
+            for k in range(batch_size):
                 if FLAGS.adv:
-                    adv_time_series = defense_time_series
+                    adv_time_series.append(noisy_audios[k])
                 else:
-                    benign_time_series = defense_time_series
-                return adv_time_series, benign_time_series
+                    benign_time_series.append(noisy_audios[k])
 
-            if FLAGS.type_defense == 1:
-                print('Type: MP3')
-                defense_time_series = np.array(MP3_compression(batch_size, data_new, data_sub))
-                if FLAGS.adv:
-                    adv_time_series = defense_time_series
+            '''
+            audio_stft = []
+            ori = 0
+            final = 0
+            for i in range(batch_size):
+                audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
+                ori = ((librosa.core.stft(audios[i], center=False)))
+            noisy = applyDefense(batch_size, psd_threshold, audio_stft, factor)
+
+            for k in range(batch_size):
+                phase = []
+                phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
+                time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
+                time_series = numpy.array(time_series)
+                time_series.resize(lengths[k], refcheck=False)
+
+                time_series1 = raw_audio[k]
+                time_series1 = time_series1[: lengths[k]]
+                time_series1 = numpy.array(time_series1)
+                print(k)
+                print(len(time_series1), " ", len(time_series))
+
+
+                #final_time_series = time_series + time_series1
+                final_time_series = time_series1
+                print('size', numpy.array(final_time_series).shape)
+
+                # added
+                file_name = './noisy_data/defensive_' + str(0) + '.pkl'
+                pkl_file = open(file_name, 'rb')
+                all_noisy = pickle.load(pkl_file)
+                pkl_file.close()
+                key = str(2) + '_' + str(int(0)) + '_' + str(0)
+                first = (all_noisy[key])
+
+                print('size2', numpy.array(first).shape)
+
+
+                #final_time_series = first
+                if x == 0:
+                    adv_time_series.append(final_time_series)
                 else:
-                    benign_time_series = defense_time_series
-                return adv_time_series, benign_time_series
-
-            if FLAGS.type_defense == 0:
-                print('Type: Ours')
-                audio_stft = []
-                ori = 0
-                final = 0
-                for i in range(batch_size):
-                    audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
-                    ori = ((librosa.core.stft(audios[i], center=False)))
-                noisy = applyDefense(batch_size, psd_threshold, audio_stft, factor)
-
-                for k in range(batch_size):
-                    phase = []
-                    phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
-                    time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
-                    time_series = numpy.array(time_series)
-                    time_series.resize(lengths[k], refcheck=False)
-
-                    time_series1 = raw_audio[k]
-                    time_series1 = time_series1[: lengths[k]]
-                    time_series1 = numpy.array(time_series1)
-                    print(k)
-                    print(len(time_series1), " ", len(time_series))
-
-
-                    #final_time_series = time_series + time_series1
-                    final_time_series = time_series1
-                    print('size', numpy.array(final_time_series).shape)
-
-                    # added
-                    file_name = './noisy_data/defensive_' + str(0) + '.pkl'
-                    pkl_file = open(file_name, 'rb')
-                    all_noisy = pickle.load(pkl_file)
-                    pkl_file.close()
-                    key = str(2) + '_' + str(int(0)) + '_' + str(0)
-                    first = (all_noisy[key])
-
-                    print('size2', numpy.array(first).shape)
-
-
-                    #final_time_series = first
-                    if x == 0:
-                        adv_time_series.append(final_time_series)
-                    else:
-                        benign_time_series.append(final_time_series)
-
+                    benign_time_series.append(final_time_series)
+                '''
 
 
 

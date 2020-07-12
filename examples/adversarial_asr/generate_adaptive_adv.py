@@ -38,7 +38,7 @@ flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
 flags.DEFINE_float('lr_stage1_robust', '5', 'learning_rate for stage 1_robust')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '2000', 'number of iterations in stage 1')
-flags.DEFINE_integer('num_iter_stage1_robust', '4000', 'number of iterations in stage 1_robust')
+flags.DEFINE_integer('num_iter_stage1_robust', '2000', 'number of iterations in stage 1_robust')
 flags.DEFINE_integer('num_iter_stage2', '6000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
@@ -224,7 +224,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100,lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust = 4000, num_iter_stage2=6000, th=None,
+                 lr_stage1=100,lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust = 2000, num_iter_stage2=6000, th=None,
                  psd_max_ori=None):
 
         self.sess = sess

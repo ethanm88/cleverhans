@@ -47,6 +47,11 @@ flags.DEFINE_integer('num_counter', '2', 'the initial number of required success
 flags.DEFINE_integer('num_goal', '10', 'the initial number of noise samples')
 flags.DEFINE_integer('max_delta', '100', 'the max delta added to the max l infinity norm')
 
+flags.DEFINE_integer('num_imperceptible_test', '10', 'number of noise samples to test')
+flags.DEFINE_integer('num_imperceptible_pass', '6', 'number of noise samples to pass')
+
+
+
 FLAGS = flags.FLAGS
 
 
@@ -545,7 +550,7 @@ class Attack:
                             sum_counter += 1
                             print("succeed %d times for example %d" % (sum_counter, ii))
 
-                            feed_dict = {self.input_tf: noisy_audios_testing[counter],
+                            feed_dict = {self.input_tf: noisy_audios_testing[counter%100],
                                          self.ori_input_tf: audios,
                                          self.tgt_tf: trans,
                                          self.sample_rate_tf: sample_rate,
@@ -559,6 +564,11 @@ class Attack:
                                          self.lr_stage1: FLAGS.lr_stage1_robust
                                          }
                             predictions = sess.run(self.decoded, feed_dict)
+                            if counter == 99:
+                                index = random.randint(0, 49)
+                                while index == cur_file:
+                                    index = random.randint(0, 49)
+                                noisy_audios_testing = read_noisy(num_loop, batch_size, index)
 
                         if sum_counter == num_counters[ii]:
                             print("-------------------------------True--------------------------")
@@ -587,7 +597,7 @@ class Attack:
 
     def attack_stage2(self, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen,
                       sample_rate, masks, masks_freq,
-                      num_loop, data, lr_stage2):
+                      num_loop, data, lr_stage2, lr_stage1):
         sess = self.sess
         # initialize and load the pretrained model
         sess.run(tf.initializers.global_variables())
@@ -605,7 +615,9 @@ class Attack:
 
         psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
         # noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
-        noisy_audios = read_noisy(num_loop, batch_size, 10)  # load initial audio
+        noisy_audios = read_noisy(num_loop, batch_size, 40)  # load initial audio
+        noisy_audios_testing = read_noisy(num_loop, batch_size, random.randint(0, 49)) # noise for robustness testing
+
         feed_dict = {self.input_tf: noisy_audios[0],
                      self.ori_input_tf: audios,
                      self.tgt_tf: trans,
@@ -616,7 +628,8 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise,
                      self.maxlen: maxlen,
-                     self.lr_stage2: lr_stage2}
+                     self.lr_stage2: lr_stage2,
+                     self.lr_stage1: lr_stage1}
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
         # show the initial predictions
@@ -636,14 +649,19 @@ class Attack:
         # final_th = [None] * self.batch_size
         clock = 0
         min_th = 0.000005
+
+        num_imperceptible_test = [FLAGS.num_imperceptible_test] * self.batch_size
+        num_imperceptible_pass = [FLAGS.num_imperceptible_pass] * self.batch_size
+
         for i in range(MAX): # changed - start at 20000
 
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
-                if i >= 4000:
-                    noisy_audios = read_noisy(num_loop, batch_size, int((i-4000) / 100))
-                else:
-                    noisy_audios = read_noisy(num_loop, batch_size, int(i / 100) + 10)
+                noisy_audios = read_noisy(num_loop, batch_size, int(40+i/100)%50)
+
+            if i%50 == 0 and i!= 0:
+                noisy_audios_testing = read_noisy(num_loop, batch_size,random.randint(0, 49))  # noise for robustness testing
+
             feed_dict = {self.input_tf: noisy_audios[i % 100],
                          self.ori_input_tf: audios,
                          self.tgt_tf: trans,
@@ -654,10 +672,12 @@ class Attack:
                          self.mask_freq: masks_freq,
                          self.noise: noise,
                          self.maxlen: maxlen,
-                         self.lr_stage2: lr_stage2}
+                         self.lr_stage2: lr_stage2,
+                         self.lr_stage1: lr_stage1}
             #losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
-            if i == 4000: # 6000 iterations now
+            '''
+            if i == 3000: # 6000 iterations now
                 # min_th = -np.inf
                 #lr_stage2 = 0.1
                 feed_dict = {self.input_tf: noisy_audios[i % 100],
@@ -670,15 +690,17 @@ class Attack:
                              self.mask_freq: masks_freq,
                              self.noise: noise,
                              self.maxlen: maxlen,
-                             self.lr_stage2: lr_stage2}
+                             self.lr_stage2: lr_stage2,
+                             self.lr_stage1: lr_stage1}
+            '''
 
             # Actually do the optimization
             sess.run(self.train2, feed_dict)
             #print('Delta_large', self.delta_large)
             #print('Alpha', self.alpha)
             if i % 10 == 0:
-                actual_input, d, cl, l, predictions, new_input = sess.run(
-                    (self.actual_input, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
+                apply_delta, d, cl, l, predictions, new_input = sess.run(
+                    (self.apply_delta, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
                 # print out the prediction each 50 iterations
@@ -707,33 +729,52 @@ class Attack:
                         print("iteration: %d, alpha: %f, loss_ce: %f, loss_th: %f" % (i, alpha[ii], cl[ii], l[ii]))
 
                     # if the network makes the targeted prediction
-                    if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
-                        if l[ii] < loss_th[ii]:
-                            #final_deltas[ii] = new_input[ii]
-                            #actual_input = sess.run((self.actual_input), feed_dict)
-                            final_deltas[ii] = actual_input
-                            final_perturb = d
+                    sum_counter = 0
+                    for counter in range(num_imperceptible_test[ii]):
+                        if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
+                            if l[ii] < loss_th[ii]:
+                                sum_counter += 1
+                                print("succeed %d times for example %d" % (sum_counter, ii))
+
+                                feed_dict = {self.input_tf: noisy_audios_testing[counter%100],
+                                             self.ori_input_tf: audios,
+                                             self.tgt_tf: trans,
+                                             self.sample_rate_tf: sample_rate,
+                                             self.th: th_batch,
+                                             self.psd_max_ori: psd_max_batch,
+                                             self.mask: masks,
+                                             self.mask_freq: masks_freq,
+                                             self.noise: noise,
+                                             self.maxlen: maxlen,
+                                             self.lr_stage2: lr_stage2,
+                                             self.lr_stage1: FLAGS.lr_stage1
+                                             }
+                                predictions = sess.run(self.decoded, feed_dict)
+
+                        if sum_counter == num_imperceptible_pass[ii]:
+                            final_deltas[ii] = new_input[ii]
+                            final_perturb[ii] = apply_delta[ii]
                             loss_th[ii] = l[ii]
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")
                             print("save the best example=%d at iteration= %d, alpha = %f" % (ii, i, alpha[ii]))
 
-                        # increase the alpha each 20 iterations
-                        if i % 20 == 0:
-                            alpha[ii] *= 1.2
-                            sess.run(tf.assign(self.alpha, alpha))
-
                     # if the network fails to make the targeted prediction, reduce alpha each 50 iterations
-                    if i % 50 == 0 and predictions['topk_decoded'][ii, 0] != trans[ii].lower():
+                    if i % 50 == 0 and sum_counter < num_imperceptible_pass[ii]:
                         alpha[ii] *= 0.8
                         alpha[ii] = max(alpha[ii], min_th)
                         sess.run(tf.assign(self.alpha, alpha))
 
+                    # increase the alpha each 20 iterations
+                    if i % 20 == 0:
+                        alpha[ii] *= 1.2
+                        sess.run(tf.assign(self.alpha, alpha))
+
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
-                    #final_deltas[ii] = new_input[ii]
-                    #actual_input = sess.run((self.actual_input), feed_dict)
-                    final_deltas[ii] = actual_input
+
+                    final_deltas[ii] = new_input[ii]
+                    final_perturb[ii] = apply_delta[ii]
 
 
 

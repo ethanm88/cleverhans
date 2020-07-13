@@ -746,21 +746,25 @@ class Attack:
                             if l[ii] < loss_th[ii]:
                                 sum_counter += 1
                                 print("succeed %d times for example %d" % (sum_counter, ii))
+                            else:
+                                print("fail  at %d for example %d" % (counter, ii))
+                        else:
+                            print("fail  at %d for example %d" % (counter, ii))
 
-                                feed_dict = {self.input_tf: noisy_audios_testing[counter%100],
-                                             self.ori_input_tf: audios,
-                                             self.tgt_tf: trans,
-                                             self.sample_rate_tf: sample_rate,
-                                             self.th: th_batch,
-                                             self.psd_max_ori: psd_max_batch,
-                                             self.mask: masks,
-                                             self.mask_freq: masks_freq,
-                                             self.noise: noise,
-                                             self.maxlen: maxlen,
-                                             self.lr_stage2: lr_stage2,
-                                             self.lr_stage1: FLAGS.lr_stage1
-                                             }
-                                predictions = sess.run(self.decoded, feed_dict)
+                        feed_dict = {self.input_tf: noisy_audios_testing[counter%100],
+                                     self.ori_input_tf: audios,
+                                     self.tgt_tf: trans,
+                                     self.sample_rate_tf: sample_rate,
+                                     self.th: th_batch,
+                                     self.psd_max_ori: psd_max_batch,
+                                     self.mask: masks,
+                                     self.mask_freq: masks_freq,
+                                     self.noise: noise,
+                                     self.maxlen: maxlen,
+                                     self.lr_stage2: lr_stage2,
+                                     self.lr_stage1: FLAGS.lr_stage1
+                                     }
+                        predictions = sess.run(self.decoded, feed_dict)
 
                         if sum_counter == num_imperceptible_pass[ii]:
                             final_deltas[ii] = new_input[ii]
@@ -781,9 +785,6 @@ class Attack:
                         alpha[ii] *= 0.8
                         alpha[ii] = max(alpha[ii], min_th)
                         sess.run(tf.assign(self.alpha, alpha))
-
-
-
 
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):

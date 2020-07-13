@@ -596,7 +596,7 @@ class Attack:
         return final_deltas, final_perturb
 
 
-    def attack_stage2(self, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen,
+    def attack_stage2(self, raw_audio, batch_size, lengths, rescales, audios, trans, adv, th_batch, psd_max_batch, maxlen,
                       sample_rate, masks, masks_freq,
                       num_loop, data, lr_stage2, lr_stage1):
         sess = self.sess
@@ -605,7 +605,7 @@ class Attack:
         saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
         saver.restore(sess, FLAGS.checkpoint)
 
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
+        sess.run(tf.assign(self.rescale, rescales))
         sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.001))
 
         # reassign the variables
@@ -913,7 +913,7 @@ def main(argv):
                 #read previous
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
 
-                perturbs = []
+
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
@@ -923,15 +923,16 @@ def main(argv):
 
                     if max(perturb) < 1:
                         perturb = perturb * 32768
-                    adv_example = audios + perturb # change to audios[i]
-                    perturbs.append(perturb)
+                    adv_example = audios[i] + perturb # change to audios[i]
+
                     print(saved_name)
 
 
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
-                adv[:, :maxlen] = perturb[0]#adv_example - audios
-
-                adv_example, perturb, loss_th, final_alpha = attack.attack_stage2(raw_audio, batch_size, lengths, audios, trans,
+                adv[:, :maxlen] = adv_example - audios
+                rescales = np.max(np.abs(adv), axis=1)
+                rescales = np.expand_dims(rescales, axis=1)
+                adv_example, perturb, loss_th, final_alpha = attack.attack_stage2(raw_audio, batch_size, lengths, rescales, audios, trans,
                                                                          adv, th_batch, psd_max_batch,
                                                                          maxlen, sample_rate, masks, masks_freq, l,
                                                                          data_sub, FLAGS.lr_stage2, FLAGS.lr_stage1)

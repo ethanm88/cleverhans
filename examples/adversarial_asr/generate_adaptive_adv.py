@@ -734,6 +734,8 @@ class Attack:
                         text_file.write(str(alpha[ii]) + "\n")
                     with open("loss_th.txt", "a") as text_file:
                         text_file.write(str(l[ii]) + "\n")
+                    with open("loss_ce_stage2.txt", "a") as text_file:
+                        text_file.write(str(cl[ii]) + "\n")
 
                     if i % 100 == 0:
                         print("example: {}".format(num_loop * self.batch_size + ii))

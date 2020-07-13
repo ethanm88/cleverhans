@@ -13,6 +13,22 @@ def readfromfile(file_name, size):
 
 
 def main():
+
+    loss_ce_stage1 = readfromfile("loss_ce_stage1.txt", 1)
+    loss_ce_robust = readfromfile("loss_ce_robust.txt", 1)
+
+    iters = range(0,2000, 10)
+    iters2 = range(0,1000, 10)
+    plt.title('Loss_ce (Adaptive vs. Normal)',fontsize=18)
+    plt.plot(iters, loss_ce_stage1[-200:], label='Stage 1 Attack')
+    plt.plot(iters2, loss_ce_robust, label='Stage 1_robust Attack')
+    plt.xlabel('Iteration', fontsize=14)
+    plt.ylabel('Alpha', fontsize=14)
+    plt.legend()
+    plt.show()
+
+
+
     alpha_adapt = readfromfile("alpha_adaptive_6000.txt", 1)
     loss_th_adapt = readfromfile("loss_th_adaptive_6000.txt", 1)
     loss_th_adapt = np.log(loss_th_adapt)

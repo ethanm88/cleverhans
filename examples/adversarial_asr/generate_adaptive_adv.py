@@ -913,6 +913,7 @@ def main(argv):
                 #read previous
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
 
+                perturbs = []
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
@@ -923,11 +924,12 @@ def main(argv):
                     if max(perturb) < 1:
                         perturb = perturb * 32768
                     adv_example = audios + perturb # change to audios[i]
+                    perturbs.append(perturb)
                     print(saved_name)
 
 
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
-                adv[:, :maxlen] = adv_example - audios
+                adv[:, :maxlen] = perturb[0]#adv_example - audios
 
                 adv_example, perturb, loss_th, final_alpha = attack.attack_stage2(raw_audio, batch_size, lengths, audios, trans,
                                                                          adv, th_batch, psd_max_batch,

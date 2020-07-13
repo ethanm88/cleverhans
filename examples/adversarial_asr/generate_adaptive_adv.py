@@ -741,14 +741,16 @@ class Attack:
 
                     # if the network makes the targeted prediction
                     sum_counter = 0
+                    sum_succeed = 0
                     for counter in range(num_imperceptible_test[ii]):
                         print('Iter:', counter)
                         if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
+                            sum_succeed += 1
                             if l[ii] < loss_th[ii]:
                                 sum_counter += 1
                                 print("succeed %d times for example %d" % (sum_counter, ii))
                             else:
-                                print("fail at %d for example %d" % (counter, ii))
+                                print("succeed at %d but loss_th too high for example %d" % (counter, ii))
                         else:
                             print("fail at %d for example %d" % (counter, ii))
 
@@ -775,15 +777,17 @@ class Attack:
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")
                             print("save the best example=%d at iteration= %d, alpha = %f" % (ii, i, alpha[ii]))
-
-                            # increase the alpha each 20 iterations
-                            if i % 20 == 0:
-                                alpha[ii] *= 1.2
-                                sess.run(tf.assign(self.alpha, alpha))
                             break
 
+                    if sum_succeed >= num_imperceptible_pass[ii]:
+                        # increase the alpha each 20 iterations
+                        if i % 20 == 0:
+                            alpha[ii] *= 1.2
+                            sess.run(tf.assign(self.alpha, alpha))
+
+
                     # if the network fails to make the targeted prediction, reduce alpha each 50 iterations
-                    if i % 50 == 0 and sum_counter < num_imperceptible_pass[ii]:
+                    if i % 50 == 0 and sum_succeed < num_imperceptible_pass[ii]:
                         alpha[ii] *= 0.8
                         alpha[ii] = max(alpha[ii], min_th)
                         sess.run(tf.assign(self.alpha, alpha))

@@ -922,7 +922,7 @@ def main(argv):
 
                     if max(perturb) < 1:
                         perturb = perturb * 32768
-                    adv_example = audios[i] + perturb # change to audios[i]
+                    adv_example = audios + perturb # change to audios[i]
                     print(saved_name)
 
 

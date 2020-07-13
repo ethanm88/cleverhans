@@ -769,6 +769,7 @@ class Attack:
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")
                             print("save the best example=%d at iteration= %d, alpha = %f" % (ii, i, alpha[ii]))
+                            break
 
                     # if the network fails to make the targeted prediction, reduce alpha each 50 iterations
                     if i % 50 == 0 and sum_counter < num_imperceptible_pass[ii]:

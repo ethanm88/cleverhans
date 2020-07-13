@@ -327,7 +327,7 @@ def save_audios(factor, index_loop):
                 for m in range(batch_size):
                     #data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage1' + '.wav'
                     name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
-                    perturb_name = name + '_adaptive_stage1_perturb' + '.wav'
+                    perturb_name = name + '_adaptive_stage1_robust_perturb' + '.wav'
                     sample_rate_np, delta = wav.read(perturb_name)
                     _, audio_orig = wav.read("./" + str(name) + ".wav")
                     if max(delta) < 1:

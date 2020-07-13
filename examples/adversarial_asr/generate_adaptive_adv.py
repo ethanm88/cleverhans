@@ -742,14 +742,15 @@ class Attack:
                     # if the network makes the targeted prediction
                     sum_counter = 0
                     for counter in range(num_imperceptible_test[ii]):
+                        print('Iter:', counter)
                         if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
                             if l[ii] < loss_th[ii]:
                                 sum_counter += 1
                                 print("succeed %d times for example %d" % (sum_counter, ii))
                             else:
-                                print("fail  at %d for example %d" % (counter, ii))
+                                print("fail at %d for example %d" % (counter, ii))
                         else:
-                            print("fail  at %d for example %d" % (counter, ii))
+                            print("fail at %d for example %d" % (counter, ii))
 
                         feed_dict = {self.input_tf: noisy_audios_testing[counter%100],
                                      self.ori_input_tf: audios,

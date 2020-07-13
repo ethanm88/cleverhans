@@ -769,7 +769,7 @@ class Attack:
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")
                             print("save the best example=%d at iteration= %d, alpha = %f" % (ii, i, alpha[ii]))
-                            
+
                             # increase the alpha each 20 iterations
                             if i % 20 == 0:
                                 alpha[ii] *= 1.2

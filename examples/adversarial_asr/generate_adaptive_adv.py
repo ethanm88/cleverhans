@@ -769,6 +769,11 @@ class Attack:
                             final_alpha[ii] = alpha[ii]
                             print("-------------------------------------Succeed---------------------------------")
                             print("save the best example=%d at iteration= %d, alpha = %f" % (ii, i, alpha[ii]))
+                            
+                            # increase the alpha each 20 iterations
+                            if i % 20 == 0:
+                                alpha[ii] *= 1.2
+                                sess.run(tf.assign(self.alpha, alpha))
                             break
 
                     # if the network fails to make the targeted prediction, reduce alpha each 50 iterations
@@ -777,10 +782,8 @@ class Attack:
                         alpha[ii] = max(alpha[ii], min_th)
                         sess.run(tf.assign(self.alpha, alpha))
 
-                    # increase the alpha each 20 iterations
-                    if i % 20 == 0:
-                        alpha[ii] *= 1.2
-                        sess.run(tf.assign(self.alpha, alpha))
+
+
 
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):

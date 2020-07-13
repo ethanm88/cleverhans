@@ -751,8 +751,9 @@ class Attack:
                                 print("fail at %d for example %d" % (counter, ii))
                         else:
                             print("fail at %d for example %d" % (counter, ii))
-
-                        feed_dict = {self.input_tf: noisy_audios_testing[counter%100],
+                            
+                        noise_index = random.randint(0,99)
+                        feed_dict = {self.input_tf: noisy_audios_testing[noise_index],
                                      self.ori_input_tf: audios,
                                      self.tgt_tf: trans,
                                      self.sample_rate_tf: sample_rate,

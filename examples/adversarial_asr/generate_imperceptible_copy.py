@@ -299,10 +299,12 @@ class Attack:
         final_deltas = [None] * self.batch_size
         final_alpha = [None] * self.batch_size
         # final_th = [None] * self.batch_size
+
         clock = 0
         min_th = 0.0005
         for i in range(MAX):
             now = time.time()
+            '''
             if i == 3000:
                 # min_th = -np.inf
                 lr_stage2 = 0.1
@@ -316,7 +318,7 @@ class Attack:
                              self.noise: noise,
                              self.maxlen: maxlen,
                              self.lr_stage2: lr_stage2}
-
+            '''
             # Actually do the optimization
             sess.run(self.train2, feed_dict)
 
@@ -326,6 +328,9 @@ class Attack:
 
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
+
+
+
                 if i % 1000 == 0:
                     print("pred:{}".format(predictions['topk_decoded'][ii, 0]))
                     # print("rescale: {}".format(sess.run(self.rescale[ii])))
@@ -333,6 +338,19 @@ class Attack:
                     # print("example: {}".format(num_loop * self.batch_size + ii))
 
                     alpha = sess.run(self.alpha)
+
+
+                    print("Every:")
+                    print("iteration_Test: %d" % (i))
+                    print("alpha_Test: %f" % (alpha[ii]))
+                    print("loss_ce_Test: %f" % (cl[ii]))
+                    print("loss_th_Test: %f" % (l[ii]))
+
+                    with open("alpha_normal.txt", "a") as text_file:
+                        text_file.write(str(alpha[ii]) + "\n")
+                    with open("loss_th_normal.txt", "a") as text_file:
+                        text_file.write(str(l[ii]) + "\n")
+
                     if i % 100 == 0:
                         print("example: {}".format(num_loop * self.batch_size + ii))
                         print("iteration: %d, alpha: %f, loss_ce: %f, loss_th: %f" % (i, alpha[ii], cl[ii], l[ii]))
@@ -389,9 +407,9 @@ def main(argv):
                             lr_stage2=FLAGS.lr_stage2,
                             num_iter_stage1=FLAGS.num_iter_stage1,
                             num_iter_stage2=FLAGS.num_iter_stage2)
+
             num_loops = 1
             for l in range(num_loops):
-
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
 
                 # stage 1
@@ -430,6 +448,8 @@ def main(argv):
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_stage2.wav"
                     adv_example[i] = adv_example[i] / 32768.
+                    print('size', np.array(adv_example[i][:lengths[i]]).size)
+
                     wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
                     print(saved_name)
 

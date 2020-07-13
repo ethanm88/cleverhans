@@ -39,7 +39,7 @@ flags.DEFINE_float('lr_stage1_robust', '5', 'learning_rate for stage 1_robust')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '2000', 'number of iterations in stage 1')
 flags.DEFINE_integer('num_iter_stage1_robust', '1000', 'number of iterations in stage 1_robust')
-flags.DEFINE_integer('num_iter_stage2', '6000', 'number of iterations in stage 2')
+flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
 
@@ -224,7 +224,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100,lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust = 1000, num_iter_stage2=6000, th=None,
+                 lr_stage1=100,lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust = 1000, num_iter_stage2=4000, th=None,
                  psd_max_ori=None):
 
         self.sess = sess
@@ -654,14 +654,17 @@ class Attack:
         num_imperceptible_test = [FLAGS.num_imperceptible_test] * self.batch_size
         num_imperceptible_pass = [FLAGS.num_imperceptible_pass] * self.batch_size
 
+        cur_file = 0
+        print('Num Iters: ', MAX)
         for i in range(MAX): # changed - start at 20000
 
             now = time.time()
             if i % 100 == 0 and i != 0:  # load new file every 100 iterations
+                cur_file = int(30+i/100)%50
                 noisy_audios = read_noisy(num_loop, batch_size, int(40+i/100)%50)
 
-            if i%50 == 0 and i!= 0:
-                noisy_audios_testing = read_noisy(num_loop, batch_size,random.randint(0, 49))  # noise for robustness testing
+            #if i%50 == 0 and i!= 0:
+            #    noisy_audios_testing = read_noisy(num_loop, batch_size,random.randint(0, 49))  # noise for robustness testing
 
             feed_dict = {self.input_tf: noisy_audios[i % 100],
                          self.ori_input_tf: audios,
@@ -702,6 +705,13 @@ class Attack:
             if i % 10 == 0:
                 apply_delta, d, cl, l, predictions, new_input = sess.run(
                     (self.apply_delta, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
+
+            if i %10 == 0:
+                if i % 10 == 0:
+                    index = random.randint(0, 49)
+                    while index == cur_file:
+                        index = random.randint(0, 49)
+                    noisy_audios_testing = read_noisy(num_loop, batch_size, index)  # get random noise file - move into loop when get better gpu
 
             for ii in range(self.batch_size):
                 # print out the prediction each 50 iterations
@@ -787,7 +797,7 @@ class Attack:
 
             clock += time.time() - now
 
-        return final_deltas, loss_th, final_alpha
+        return final_deltas, final_perturb, loss_th, final_alpha
 
 
 def main(argv):
@@ -839,8 +849,8 @@ def main(argv):
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
                 '''
-
-                # stage 2
+                '''
+                # stage 1_robust
                 # read the adversarial examples saved in stage 1
 
                 #read previous
@@ -855,7 +865,7 @@ def main(argv):
 
                     if max(perturb) < 1:
                         perturb = perturb * 32768
-                    adv_example = audios + perturb
+                    adv_example = audios[i] + perturb
 
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
@@ -887,26 +897,47 @@ def main(argv):
 
                     pickle.dump(save_dict, output)
                     output.close()
-
-                '''
+                
+                
                 file_name = 'adaptive_stage_1_robust.pkl'
                 pkl_file = open(file_name, 'rb')
                 adv_example = pickle.load(pkl_file)
                 print('Type',type(adv_example))
                 print(adv_example)
                 pkl_file.close()
-                '''
+                
                 '''
                 # stage 2
                 # read the adversarial examples saved in stage 1
+
+                #read previous
+                raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)
+
+                for i in range(batch_size):
+                    name, _ = data_sub[0, i].split(".")
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
+                    sample_rate_np, perturb = wav.read(saved_name)
+
+                    _, audio_orig = wav.read("./" + str(name) + ".wav")
+
+                    if max(perturb) < 1:
+                        perturb = perturb * 32768
+                    adv_example = audios[i] + perturb # change to audios[i]
+                    print(saved_name)
+
+
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
 
-                adv_example, loss_th, final_alpha = attack.attack_stage2(raw_audio, batch_size, lengths, audios, trans,
+                adv_example, perturb, loss_th, final_alpha = attack.attack_stage2(raw_audio, batch_size, lengths, audios, trans,
                                                                          adv, th_batch, psd_max_batch,
                                                                          maxlen, sample_rate, masks, masks_freq, l,
-                                                                         data_sub, FLAGS.lr_stage2)
-
+                                                                         data_sub, FLAGS.lr_stage2, FLAGS.lr_stage1)
+                '''
+                self, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen,
+                      sample_rate, masks, masks_freq,
+                      num_loop, data, lr_stage2, lr_stage1
+                '''
                 # save the adversarial examples in stage 2
                 for i in range(batch_size):
                     # save adv examples:
@@ -918,17 +949,22 @@ def main(argv):
 
                     name, _ = data_sub[0, i].split(".")
                     saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2.wav"
-                    adv_example[i] = adv_example[i] / 32768.
+                    adv_example_float = adv_example[i] / 32768.
                     print('size', np.array(adv_example[i][:lengths[i]]).size)
 
-                    file_name = 'final_adpative.pkl'
-                    output = open(file_name, 'wb')
-                    pickle.dump(adv_example, output)
-                    output.close()
-
-                    wav.write(saved_name, 16000, (np.array(adv_example[i][:lengths[i]])).transpose())
+                    wav.write(saved_name, 16000, (np.array(adv_example_float[:lengths[i]])).transpose())
                     print(saved_name)
-                '''
+
+                    name, _ = data_sub[0, i].split(".")
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2_perturb.wav"
+                    perturb_float = perturb[i] / 32768.
+                    print('size', np.array(adv_example[i][:lengths[i]]).size)
+
+                    wav.write(saved_name, 16000, (np.array(perturb_float[:lengths[i]])).transpose())
+                    print(saved_name)
+
+
+
 
 if __name__ == '__main__':
     app.run(main)

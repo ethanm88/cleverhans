@@ -38,7 +38,8 @@ flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1
 flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
-flags.DEFINE_integer('type_defense', '2', 'which gpu to run') # 0: ours, 1: MP3, 2: Quantization
+flags.DEFINE_integer('type_defense', '2', 'type of defense to run ') # 0: ours, 1: MP3, 2: Quantization
+
 
 FLAGS = flags.FLAGS
 
@@ -316,24 +317,23 @@ def save_audios(factor, index_loop):
         data_sub = data[:, l * batch_size:(l + 1) * batch_size]
         data_new = copy.deepcopy(data_sub)
         raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
-
+        delta_np = numpy.array([0])
         if FLAGS.adv:
             for m in range(batch_size):
-                #data_new[0][m] = data_sub[0][m][0:len(data_sub[0][m])-4] + '_adaptive_stage1' + '.wav'
                 name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
-                perturb_name = name + '_adaptive_stage1_perturb' + '.wav'
+                perturb_name = name + '_adaptive_stage2_perturb' + '.wav'
                 sample_rate_np, delta = wav.read(perturb_name)
                 _, audio_orig = wav.read("./" + str(name) + ".wav")
                 if max(delta) < 1:
                     delta = delta * 32768
                 audio_np = audio_orig + delta
+                delta_np = delta
                 combined_adv = audio_np / 32768.
                 wav.write(name+'_adaptive_combined.wav', 16000, np.array(np.clip(combined_adv[:lengths[m]], -2 ** 15, 2 ** 15 - 1)))
                 data_new[0][m] = name+'_adaptive_combined.wav'
                 print(name+'_adaptive_combined.wav')
 
         raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_new, batch_size)
-        #psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
 
 
 
@@ -359,16 +359,40 @@ def save_audios(factor, index_loop):
 
         if FLAGS.type_defense == 0:
             print('Type: Ours')
+
+            '''
+            Read random noisy sample:
+            You must run write_defensive_delta.py first (you can stop execution prematurely and edit the code below
+            based on the testing batch)
+            '''
+            file_name = './noisy_data/defensive_' + str(0) + '.pkl'
+            pkl_file = open(file_name, 'rb')
+            all_noisy = pickle.load(pkl_file)
+            pkl_file.close()
+            key = str(random.randint(0, 99)) + '_' + str(int(0)) + '_' + str(0)
+            noisy_sample = (all_noisy[key])
+
+
+            defense_time_series = noisy_sample + delta_np
+
+            if FLAGS.adv:
+                adv_time_series = defense_time_series
+            else:
+                benign_time_series = noisy_sample
+            return adv_time_series, benign_time_series
+
+            '''
+            
             psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
             noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw_audio, phase)
-
+            
             for k in range(batch_size):
                 if FLAGS.adv:
                     adv_time_series.append(noisy_audios[k])
                 else:
                     benign_time_series.append(noisy_audios[k])
 
-            '''
+            
             audio_stft = []
             ori = 0
             final = 0

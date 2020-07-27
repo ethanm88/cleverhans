@@ -418,7 +418,7 @@ class Attack:
                         print("iteration: {}. loss {}".format(i, cl[ii]))
 
                     #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
-                    WER = sess.run(self.wer_value, feed_dict)
+                    WER = sess.run((self.wer_value), feed_dict)
                     print("WER: ", WER)
                     if WER >= min_difference:
                         print("-------------------------------True--------------------------")
@@ -562,7 +562,7 @@ class Attack:
                 sum_counter = 0
                 if i % 10 == 0:
                     for counter in range(num_goal[ii]):
-                        WER = sess.run(self.wer_value, feed_dict)
+                        WER = sess.run((self.wer_value), feed_dict)
                         print("WER: ", WER)
 
                         #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
@@ -769,7 +769,7 @@ class Attack:
                     sum_succeed = 0
                     for counter in range(num_imperceptible_test[ii]):
                         print('Iter:', counter)
-                        WER = sess.run(self.wer_value, feed_dict)
+                        WER = sess.run((self.wer_value), feed_dict)
                         print("WER: ", WER)
 
                         #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():

@@ -5,7 +5,7 @@ import tensorflow as tf
 import os
 from lingvo import model_imports
 from lingvo import model_registry
-from jiwer import wer
+import wer_calculation
 import numpy as np
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
@@ -418,7 +418,7 @@ class Attack:
                         print("iteration: {}. loss {}".format(i, cl[ii]))
 
                     #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
-                    WER = wer(trans[ii].lower(), predictions['topk_decoded'][ii, 0])
+                    WER = wer_calculation.wer(trans[ii].lower().split(), predictions['topk_decoded'][ii, 0].split())
                     print("WER: ", WER)
                     if WER >= min_difference:
                         print("-------------------------------True--------------------------")
@@ -562,7 +562,7 @@ class Attack:
                 sum_counter = 0
                 if i % 10 == 0:
                     for counter in range(num_goal[ii]):
-                        WER = wer(trans[ii].lower(), predictions['topk_decoded'][ii, 0])
+                        WER = wer_calculation.wer(trans[ii].lower().split(), predictions['topk_decoded'][ii, 0].split())
                         print("WER: ", WER)
 
                         #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
@@ -769,7 +769,7 @@ class Attack:
                     sum_succeed = 0
                     for counter in range(num_imperceptible_test[ii]):
                         print('Iter:', counter)
-                        WER = wer(trans[ii].lower(), predictions['topk_decoded'][ii, 0])
+                        WER = wer_calculation.wer(trans[ii].lower().split(), predictions['topk_decoded'][ii, 0].split())
                         print("WER: ", WER)
 
                         #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():

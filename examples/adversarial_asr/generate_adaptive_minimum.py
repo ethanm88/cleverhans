@@ -287,7 +287,7 @@ class Attack:
             self.decoded = task.Decode(self.inputs)
 
             dec_metrics_dict = task.CreateDecoderMetrics()
-            #task.PostProcessDecodeOut(self.decoded, dec_metrics_dict)
+            task.PostProcessDecodeOut(tf.Session().run(self.decoded), dec_metrics_dict)
             self.wer_value = tf.Variable(dec_metrics_dict['wer'].value * 100.)
 
         # compute the loss for masking threshold

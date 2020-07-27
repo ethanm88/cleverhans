@@ -5,6 +5,7 @@ import tensorflow as tf
 import os
 from lingvo import model_imports
 from lingvo import model_registry
+from jiwer import wer
 import numpy as np
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
@@ -286,12 +287,6 @@ class Attack:
             self.celoss = -1* tf.get_collection("per_loss")[0] # negate to generate untargeted attacks
             self.decoded = task.Decode(self.inputs)
 
-            dec_metrics_dict = task.CreateDecoderMetrics()
-
-            sess1 = tf.Session()
-            with sess1.as_default():
-                task.PostProcessDecodeOut((self.decoded).load(), dec_metrics_dict)
-            self.wer_value = tf.Variable(dec_metrics_dict['wer'].value * 100.)
 
         # compute the loss for masking threshold
         self.loss_th_list = []
@@ -314,6 +309,8 @@ class Attack:
         self.train21 = self.optimizer2.apply_gradients([(grad21, var21)])
         self.train22 = self.optimizer2.apply_gradients([(grad22, var22)])
         self.train2 = tf.group(self.train21, self.train22)
+
+
 
     def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate,
                       masks, masks_freq, num_loop,
@@ -421,7 +418,7 @@ class Attack:
                         print("iteration: {}. loss {}".format(i, cl[ii]))
 
                     #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
-                    WER = sess.run((self.wer_value), feed_dict)
+                    WER = wer(trans[ii].lower(), predictions['topk_decoded'][ii, 0])
                     print("WER: ", WER)
                     if WER >= min_difference:
                         print("-------------------------------True--------------------------")
@@ -565,7 +562,7 @@ class Attack:
                 sum_counter = 0
                 if i % 10 == 0:
                     for counter in range(num_goal[ii]):
-                        WER = sess.run((self.wer_value), feed_dict)
+                        WER = wer(trans[ii].lower(), predictions['topk_decoded'][ii, 0])
                         print("WER: ", WER)
 
                         #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
@@ -772,7 +769,7 @@ class Attack:
                     sum_succeed = 0
                     for counter in range(num_imperceptible_test[ii]):
                         print('Iter:', counter)
-                        WER = sess.run((self.wer_value), feed_dict)
+                        WER = wer(trans[ii].lower(), predictions['topk_decoded'][ii, 0])
                         print("WER: ", WER)
 
                         #if predictions['topk_decoded'][ii, 0] == trans[ii].lower():

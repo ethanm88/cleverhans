@@ -36,9 +36,9 @@ flags.DEFINE_integer('batch_size', '1', 'batch size')
 flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
 flags.DEFINE_float('lr_stage1_robust', '5', 'learning_rate for stage 1_robust')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
-flags.DEFINE_integer('num_iter_stage1', '2000', 'number of iterations in stage 1')
-flags.DEFINE_integer('num_iter_stage1_robust', '1000', 'number of iterations in stage 1_robust')
-flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
+flags.DEFINE_integer('num_iter_stage1', '200', 'number of iterations in stage 1')
+flags.DEFINE_integer('num_iter_stage1_robust', '200', 'number of iterations in stage 1_robust')
+flags.DEFINE_integer('num_iter_stage2', '2000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
 
@@ -221,7 +221,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100, lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust=1000, num_iter_stage2=4000,
+                 lr_stage1=100, lr_stage2=1, num_iter_stage1=200, num_iter_stage1_robust=200, num_iter_stage2=2000,
                  th=None,
                  psd_max_ori=None):
 
@@ -399,7 +399,7 @@ class Attack:
                     print("iteration_Test: %d" % (i))
                     print("loss_ce_Test: %f" % (cl[ii]))
                     print("Current distortion",
-                          np.max(np.abs(new_input[ii][:lengths[ii]] - audios[ii, :lengths[ii]])))
+                          np.max(np.abs(new_input[ii][:lengths[ii]] - noisy_audios[i % 100])))
 
                     with open("loss_ce.txt", "a") as text_file:
                         text_file.write(str(cl[ii]) + "\n")
@@ -859,7 +859,7 @@ def main(argv):
             for l in range(num_loops):
 
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-
+                '''
                 # stage 1
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
@@ -875,17 +875,17 @@ def main(argv):
                     print("Final distortion for stage 1",
                           np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1.wav"
                     adv_example_float = adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(adv_example_float[:lengths[i]]))
                     print(saved_name)
 
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_perturb.wav"
                     perturb_float = perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
-
                 '''
+
                 # stage 1_robust
                 # read the adversarial examples saved in stage 1
 
@@ -894,7 +894,7 @@ def main(argv):
 
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_perturb.wav"
                     sample_rate_np, perturb = wav.read(saved_name)
 
                     _, audio_orig = wav.read("./" + str(name) + ".wav")
@@ -918,11 +918,11 @@ def main(argv):
                     print("Final distortion for stage 1_robust",
                           np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_robust.wav"
                     adv_example_float = adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(adv_example_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
 
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_robust_perturb.wav"
                     perturb_float = perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
@@ -942,8 +942,8 @@ def main(argv):
                 print(adv_example)
                 pkl_file.close()
 
-                '''
-                '''
+
+
                 # stage 2
                 # read the adversarial examples saved in stage 1
 
@@ -953,7 +953,7 @@ def main(argv):
 
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_robust_perturb.wav"
                     sample_rate_np, perturb = wav.read(saved_name)
 
                     _, audio_orig = wav.read("./" + str(name) + ".wav")
@@ -976,9 +976,7 @@ def main(argv):
                                                                                   data_sub, FLAGS.lr_stage2,
                                                                                   FLAGS.lr_stage1)
                 
-                self, raw_audio, batch_size, lengths, audios, trans, adv, th_batch, psd_max_batch, maxlen,
-                      sample_rate, masks, masks_freq,
-                      num_loop, data, lr_stage2, lr_stage1
+
                 
                 print('final_loss_th: ', loss_th)
                 # save the adversarial examples in stage 2
@@ -991,7 +989,7 @@ def main(argv):
                         loss_th[i]))
 
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage2.wav"
                     adv_example_float = adv_example[i] / 32768.
                     print('size', np.array(adv_example[i][:lengths[i]]).size)
 
@@ -999,13 +997,13 @@ def main(argv):
                     print(saved_name)
 
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage2_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage2_perturb.wav"
                     perturb_float = perturb[i] / 32768.
                     print('size', np.array(adv_example[i][:lengths[i]]).size)
 
                     wav.write(saved_name, 16000, (np.array(perturb_float[:lengths[i]])).transpose())
                     print(saved_name)
-                '''
+
 
 if __name__ == '__main__':
     app.run(main)

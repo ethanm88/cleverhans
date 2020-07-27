@@ -927,20 +927,10 @@ def main(argv):
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
 
-                    file_name = 'adaptive_stage1_robust.pkl'
-                    output = open(file_name, 'wb')
-                    save_dict = {'perturb': perturb, 'robust_noisy': adv_example[i]}
-
-                    pickle.dump(save_dict, output)
-                    output.close()
+                    
 
 
-                file_name = 'adaptive_stage_1_robust.pkl'
-                pkl_file = open(file_name, 'rb')
-                adv_example = pickle.load(pkl_file)
-                print('Type',type(adv_example))
-                print(adv_example)
-                pkl_file.close()
+
 
 
 

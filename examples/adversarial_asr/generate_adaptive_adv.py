@@ -864,7 +864,7 @@ def main(argv):
                     print(saved_name)
                 
                 '''
-
+                '''
                 # stage 1_robust
                 # read the adversarial examples saved in stage 1
 
@@ -921,8 +921,8 @@ def main(argv):
                 print(adv_example)
                 pkl_file.close()
                 
-                
                 '''
+
                 # stage 2
                 # read the adversarial examples saved in stage 1
 
@@ -932,7 +932,7 @@ def main(argv):
 
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_stage1_robust_perturb_fac=0.wav"
                     sample_rate_np, perturb = wav.read(saved_name)
 
                     _, audio_orig = wav.read("./" + str(name) + ".wav")
@@ -979,7 +979,7 @@ def main(argv):
                     wav.write(saved_name, 16000, (np.array(perturb_float[:lengths[i]])).transpose())
                     print(saved_name)
 
-                '''
+
 
 
 if __name__ == '__main__':

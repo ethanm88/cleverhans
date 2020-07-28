@@ -38,7 +38,7 @@ flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
 flags.DEFINE_float('lr_stage1_robust', '5', 'learning_rate for stage 1_robust')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '2000', 'number of iterations in stage 1')
-flags.DEFINE_integer('num_iter_stage1_robust', '1000', 'number of iterations in stage 1_robust')
+flags.DEFINE_integer('num_iter_stage1_robust', '500', 'number of iterations in stage 1_robust')
 flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
@@ -224,7 +224,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100,lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust = 1000, num_iter_stage2=4000, th=None,
+                 lr_stage1=100,lr_stage2=1, num_iter_stage1=2000, num_iter_stage1_robust = 500, num_iter_stage2=4000, th=None,
                  psd_max_ori=None):
 
         self.sess = sess
@@ -837,6 +837,7 @@ def main(argv):
 
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
 
+                '''
                 # stage 1
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
@@ -861,8 +862,9 @@ def main(argv):
                     perturb_float = perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
-
+                
                 '''
+
                 # stage 1_robust
                 # read the adversarial examples saved in stage 1
 
@@ -919,7 +921,7 @@ def main(argv):
                 print(adv_example)
                 pkl_file.close()
                 
-                '''
+                
                 '''
                 # stage 2
                 # read the adversarial examples saved in stage 1

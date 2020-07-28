@@ -40,7 +40,7 @@ flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
 flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
-flags.DEFINE_float('factor', '-0.75', 'log of defensive perturbation proportionality factor k')
+flags.DEFINE_float('factor', '0.00', 'log of defensive perturbation proportionality factor k')
 
 FLAGS = flags.FLAGS
 

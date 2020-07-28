@@ -39,11 +39,12 @@ flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
 FLAGS = flags.FLAGS
 
-def plotTimeDomain(audio_temp, i, sample_rate_np):
+def plotTimeDomain(audio_temp, perturb_temp, i, sample_rate_np):
     if i == 0:
         duration = len(audio_temp) / sample_rate_np
         time = np.arange(0, duration, 1 / sample_rate_np)
         plt.plot(time, audio_temp, label = "Raw Audio")
+        plt.plot(time, perturb_temp, label="Peturb")
         plt.xlabel('Time (s)', fontsize = 14)
         plt.ylabel('Sample Value', fontsize = 14)
         plt.legend()
@@ -63,6 +64,7 @@ def ReadFromWav(data, batch_size):
         lengths: a list of the length of original audios
     """
     audios = []
+    perturbs = []
     lengths = []
     th_batch = []
     psd_max_batch = []
@@ -71,7 +73,8 @@ def ReadFromWav(data, batch_size):
     for i in range(batch_size):
 
         sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(data[0, i]))
-        plotTimeDomain(audio_temp, i, sample_rate_np)
+        _, perturb_temp = wav.read(FLAGS.root_dir + str(data[0, i])[0:len(str(data[0, i]))-4] + '_adaptive_stage2_perturb.wav')
+        plotTimeDomain(audio_temp, perturb_temp, i, sample_rate_np)
 
         #sample_rate_np, audio_temp = wav.read("imperceptible.wav")
         # read the wav form range from [-32767, 32768] or [-1, 1]
@@ -79,16 +82,25 @@ def ReadFromWav(data, batch_size):
             audio_np = audio_temp * 32768
         else:
             audio_np = audio_temp
+
+        if max(perturb_temp) < 1:
+            perturb_np = perturb_temp * 32768
+        else:
+            perturb_np = perturb_temp
             
         length = len(audio_np)
         
         audios.append(audio_np)
         lengths.append(length)
+
+        perturbs.append(perturb_np)
     
     max_length = max(lengths)
    
     # pad the input audio
-    audios_np = np.zeros([batch_size, max_length])  
+    audios_np = np.zeros([batch_size, max_length])
+    perturbs_np = np.zeros([batch_size, max_length])
+
     masks = np.zeros([batch_size, max_length])
     lengths_freq = (np.array(lengths) // 2 + 1) // 240 * 3
     max_length_freq = max(lengths_freq)
@@ -99,6 +111,10 @@ def ReadFromWav(data, batch_size):
     for i in range(batch_size):
         audio_float = audios[i].astype(float)
         audios_np[i, :lengths[i]] = audio_float
+
+        perturb_float = perturbs[i].astype(float)
+        perturbs_np[i, :lengths[i]] = perturb_float
+
         masks[i, :lengths[i]] = 1
         masks_freq[i, :lengths_freq[i], :] = 1
  
@@ -114,53 +130,64 @@ def ReadFromWav(data, batch_size):
     # read the transcription
     trans = data[2, :]
     
-    return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths, ATH_batch
+    return audios_np, perturbs_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths, ATH_batch
         
 
 
-def applyDefense (batch_size, th_batch, audios_stft):
+def applyDefense (batch_size, th_batch, audios_stft, factor):
     noisy = []
     #noisy = [[[0]*1025]*305]*batch_size
   #  for i in range(batch_size):
+    true_fac = pow(10, factor)
     for i in range(batch_size):
         temp1 = []
         for j in range(len(th_batch[i])):
             temp2 = []
             for k in range(len(th_batch[i][j])):
 
-                sd = th_batch[i][j][k]/6 # changed
-                temp2.append(min(max(np.random.normal(th_batch[i][j][k]/2, sd, 1)[0], 0),th_batch[i][j][k]))
+                sd = th_batch[i][j][k]*true_fac # changed
+                temp2.append(max(np.random.normal(th_batch[i][j][k]*true_fac*3, sd, 1)[0], 0))
 
 
             temp1.append(temp2)
         noisy.append(temp1)
     return noisy
 
-def applyPartialDefense (batch_size, th_batch, audios_stft, ATH_batch):
+def applyPartialDefense (batch_size, th_batch, audios_stft, ATH_batch, factor):
     noisy = []
     # noisy = [[[0]*1025]*305]*batch_size
     #  for i in range(batch_size):
+    true_fac = pow(10, factor)
     for i in range(batch_size):
         temp1 = []
         for j in range(len(th_batch[i])):
             temp2 = []
             for k in range(len(th_batch[i][j])):
-                sd = ATH_batch[i][k]/ 6  # changed
-                temp2.append(min(max(np.random.normal(ATH_batch[i][k] / 2, sd, 1)[0], 0), ATH_batch[i][k]))
+                sd = ATH_batch[i][k]*true_fac  # changed
+                temp2.append(max(np.random.normal(ATH_batch[i][k] *true_fac, sd, 1)[0], 0))
 
             temp1.append(temp2)
         noisy.append(temp1)
     return noisy
 
-def graphs(audio_stft, noisy, freqs, th_batch_sorted, ATH_batch, psd_threshold, sample_num, bin_num):
+def graphs(audio_stft, perturb_stft, noisy, freqs, th_batch_sorted, ATH_batch, psd_threshold, sample_num, bin_num):
 
 
 
     axes = plt.gca()
     axes.set_xlim([20, 8000])
-    plt.plot(freqs[sample_num][bin_num], 10 * np.log10(audio_stft[sample_num][bin_num]), label='Raw Audio')
-    #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(ATH_batch[sample_num]), label='Threshold in Quiet')
+    plt.plot(freqs[sample_num][bin_num], (audio_stft[sample_num][bin_num]), label='Raw Audio')
+    plt.plot(freqs[sample_num][bin_num], (perturb_stft[sample_num][bin_num]), label='Perturb')
+
+    plt.plot(freqs[sample_num][bin_num], (psd_threshold[sample_num][bin_num]), label='Masking Threshold')
+    plt.plot(freqs[sample_num][bin_num], (noisy[sample_num][bin_num]), label = 'Defensive Perturbation')
+
+    #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(audio_stft[sample_num][bin_num]), label='Raw Audio')
+    #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(perturb_stft[sample_num][bin_num]), label='Perturb')
+
     #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(psd_threshold[sample_num][bin_num]), label='Masking Threshold')
+
+    #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(ATH_batch[sample_num]), label='Threshold in Quiet')
 
     #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(noisy[sample_num][bin_num]), label = 'Defensive Perturbation')
     #plt.plot(freqs[sample_num][bin_num], (psd_threshold[sample_num][bin_num]), label='Masking Threshold')
@@ -171,7 +198,7 @@ def graphs(audio_stft, noisy, freqs, th_batch_sorted, ATH_batch, psd_threshold, 
     #plt.legend(handles=[line_one, line_two, line_three])
     axes = plt.gca()
 
-    axes.set_ylim([-20, 60])
+    #axes.set_ylim([-20, 60])
     plt.show()
 
 def thresholdPSD(batch_size, th_batch, audios, window_size):
@@ -185,27 +212,30 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
         psd_threshold_batch.append(psd_threshold)
     return psd_threshold_batch
 
-def getFreqDomain(batch_size, audios, ATH_batch, sample_rate, th_batch, psd_threshold, num_bins):
+def getFreqDomain(batch_size, audios, perturb, ATH_batch, sample_rate, th_batch, psd_threshold, num_bins):
     audio_stft = []
+    perturb_stft = []
     freqs = [[[0]*1025]*305]*5
     for i in range(batch_size):
         audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
+        perturb_stft.append(numpy.transpose(abs(librosa.core.stft(perturb[i], center=False))))
         for j in range(num_bins):
             freqs[i][j] = ((np.fft.fftfreq(len(audio_stft[i][j]), d=(1 / sample_rate))))
             #freqs[i][j] = librosa.core.fft_frequencies(sample_rate, len(audio_stft[i][j]))
 
-    noisy = applyDefense(batch_size, psd_threshold, audio_stft)
+    noisy = applyDefense(batch_size, psd_threshold, audio_stft, -0.75)
     for i in range(batch_size):
         ATH_batch[i] = pow(10, ATH_batch[i] / 10.)
         ATH_batch[i] = [x for _, x in sorted(zip(freqs[i][0], ATH_batch[i]))]
         for j in range(num_bins):
             audio_stft[i][j] = [x for _, x in sorted(zip(freqs[i][j], audio_stft[i][j]))]
+            perturb_stft[i][j] = [x for _, x in sorted(zip(freqs[i][j], perturb_stft[i][j]))]
             th_batch[i][j] = [x for _, x in sorted(zip(freqs[i][j], th_batch[i][j]))]
             psd_threshold[i][j] = [x for _, x in sorted(zip(freqs[i][j], psd_threshold[i][j]))]
             noisy[i][j] = [x for _, x in sorted(zip(freqs[i][j], noisy[i][j]))]
             freqs[i][j].sort()
 
-    return audio_stft, noisy, freqs, th_batch, ATH_batch, psd_threshold
+    return audio_stft, perturb_stft, noisy, freqs, th_batch, ATH_batch, psd_threshold
 '''
 def FeedForward (audios, sample_rate, mask_freq): #not finished
     pass_in = tf.clip_by_value(audios, -2 ** 15, 2 ** 15 - 1)
@@ -233,15 +263,16 @@ def main(argv):
     batch_size = FLAGS.batch_size
     num_loops = round(num / batch_size)
     assert num % batch_size == 0
-
+    num_loops = 1
+    batch_size = 1
     for l in range(num_loops):
-        data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+        data_sub = data[:, l * batch_size:(l+1) * batch_size]
 
 
-        audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths, ATH_batch = ReadFromWav(data_sub,batch_size)
+        audios, perturb, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths, ATH_batch = ReadFromWav(data_sub,batch_size)
         psd_threshold = thresholdPSD(batch_size,th_batch,audios,window_size=2048)
-        audio_stft, noisy, freqs, th_batch_sorted, ATH_batch, psd_threshold_sorted = getFreqDomain(batch_size, audios, ATH_batch, sample_rate, th_batch,psd_threshold, 305) #not always 305 - change
-        graphs(audio_stft, noisy, freqs, th_batch_sorted, ATH_batch,psd_threshold_sorted, 0, 100)
+        audio_stft, perturb_stft, noisy, freqs, th_batch_sorted, ATH_batch, psd_threshold_sorted = getFreqDomain(batch_size, audios, perturb, ATH_batch, sample_rate, th_batch,psd_threshold, 283) #not always 305 - change
+        graphs(audio_stft, perturb_stft, noisy, freqs, th_batch_sorted, ATH_batch,psd_threshold_sorted, 0, 40)
         ''''
         if(l == 0):
             audio_stft = []

@@ -414,7 +414,7 @@ class Attack:
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
                 first_delta, d, rescale_th = sess.run((self.apply_delta, self.delta, self.rescale_th), feed_dict)
-                freq_clipped_perturb = self.clip_freq(self, thresholdPSD(batch_size, th_batch, audios, window_size=2048), apply_delta, batch_size, rescale_th)
+                freq_clipped_perturb = self.clip_freq(self, thresholdPSD(batch_size, th_batch, audios, window_size=2048), first_delta, batch_size, rescale_th)
                 sess.run(tf.assign(self.apply_delta_th, freq_clipped_perturb))
 
                 apply_delta, cl, predictions, new_input = sess.run(

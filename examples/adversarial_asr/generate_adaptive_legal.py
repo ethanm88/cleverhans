@@ -107,8 +107,7 @@ def ReadFromWav(data, batch_size):
 
     th_batch = np.array(th_batch)
 
-    for i in range(batch_size):
-        th_batch[i] = th_batch.resize(len(audios_np[i]))
+
 
     psd_max_batch = np.array(psd_max_batch)
 
@@ -125,6 +124,7 @@ def getPhase(radii, angles):
 def thresholdPSD(batch_size, th_batch, audios, window_size):
     psd_threshold_batch = []
     for i in range(batch_size):
+        th_batch[i] = th_batch.resize(len(audios[i]))
         win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
         z = abs(win / window_size)
         psd_max = np.max(z * z)
@@ -360,7 +360,7 @@ class Attack:
         # noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
 
-        psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
+        #psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
 
         # noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, FLAGS.factor, lengths, raw_audio, phase)
         noisy_audios = read_noisy(num_loop, batch_size, 0)  # initial noise
@@ -377,6 +377,7 @@ class Attack:
                      self.lr_stage2: lr_stage2,
                      self.lr_stage1: lr_stage1
                      }
+        print()
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
         # show the initial predictions

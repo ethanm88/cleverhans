@@ -129,6 +129,7 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
         z = abs(win / window_size)
         psd_max = np.max(z * z)
 
+        th_batch[i] = np.copy(th_batch[i])
         psd_threshold = np.sqrt(3.0 / 8.) * float(window_size) * np.sqrt(
             np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
         psd_threshold_batch.append(psd_threshold)

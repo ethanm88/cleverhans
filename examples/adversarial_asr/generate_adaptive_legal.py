@@ -106,6 +106,10 @@ def ReadFromWav(data, batch_size):
         psd_max_batch.append(psd_max)
 
     th_batch = np.array(th_batch)
+
+    for i in range(batch_size):
+        th_batch[i] = th_batch.resize(len(audio_np[i]))
+
     psd_max_batch = np.array(psd_max_batch)
 
     # read the transcription (changed - now actual labels are the transcriptions)
@@ -322,6 +326,7 @@ class Attack:
         phase = []
 
         for i in range(batch_size):
+            
             clipped_freq.append(librosa.core.stft(original_delta[i], center=False))
             phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
 

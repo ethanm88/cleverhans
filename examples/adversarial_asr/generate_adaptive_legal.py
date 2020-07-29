@@ -278,8 +278,7 @@ class Attack:
 
             self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
-            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
-                                           name='qq_apply_th')
+            self.apply_delta_th = self.clip_freq(thresholdPSD(self.batch_size, self.th, self))
 
             self.new_input = self.apply_delta_th * self.mask + self.input_tf # changed
 

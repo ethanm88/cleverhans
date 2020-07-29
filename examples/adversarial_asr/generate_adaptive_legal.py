@@ -326,14 +326,14 @@ class Attack:
         clipped_freq = []
 
         phase = []
-        print(self.maxlen)
-        print(np.shape(original_delta))
-        print(np.shape(psd_threshold))
+
         for i in range(batch_size):
 
             clipped_freq.append(librosa.core.stft(original_delta[i], center=False))
             phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
-
+        print(self.maxlen)
+        print(np.shape(clipped_freq))
+        print(np.shape(psd_threshold))
         for i in range(batch_size):
             for j in range(len(psd_threshold[i])):
                 for k in range(len(psd_threshold[i][j])):

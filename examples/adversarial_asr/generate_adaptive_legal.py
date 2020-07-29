@@ -278,7 +278,7 @@ class Attack:
 
             self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
-            self.apply_delta_th = tf.Variable(tf.slice(tf.identity(self.apply_delta), [0, 0], [batch_size, self.maxlen]), name='qq_apply_delta_th')
+            self.apply_delta_th = tf.Variable(tf.slice(tf.identity(self.apply_delta), [0, 0], [batch_size, self.maxlen]), name='qq_apply_th')
 
             self.new_input = self.apply_delta_th * self.mask + self.input_tf # changed
 

@@ -321,11 +321,14 @@ class Attack:
         self.train2 = tf.group(self.train21, self.train22)
 
     def clip_freq(self, psd_threshold, delta, batch_size, rescale_th):
+
         original_delta = np.copy(delta)
         clipped_freq = []
 
         phase = []
-
+        print(self.maxlen)
+        print(np.shape(original_delta))
+        print(np.shape(psd_threshold))
         for i in range(batch_size):
 
             clipped_freq.append(librosa.core.stft(original_delta[i], center=False))

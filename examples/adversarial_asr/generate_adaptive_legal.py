@@ -260,14 +260,24 @@ class Attack:
             # variable
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * FLAGS.initial_bound,
                                        name='qq_rescale')
+
+            self.rescale_th = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * 2.0, name='qq_rescale_th')
+
+
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.001, name='qq_alpha')
 
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
-            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
-            self.new_input = self.apply_delta * self.mask + self.input_tf
 
-            self.actual_input = self.apply_delta * self.mask + self.ori_input_tf
+
+
+            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
+
+            self.apply_delta_th = tf.slice(tf.identity(self.apply_delta), [0, 0], [batch_size, self.maxlen])
+
+            self.new_input = self.apply_delta_th * self.mask + self.input_tf # changed
+
+            self.actual_input = self.apply_delta_th * self.mask + self.ori_input_tf
 
             self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2 ** 15, 2 ** 15 - 1)
 
@@ -304,6 +314,29 @@ class Attack:
         self.train21 = self.optimizer2.apply_gradients([(grad21, var21)])
         self.train22 = self.optimizer2.apply_gradients([(grad22, var22)])
         self.train2 = tf.group(self.train21, self.train22)
+
+    def clip_freq(self, psd_threshold, delta, batch_size, rescale_th):
+        original_delta = np.copy(delta)
+        clipped_freq = []
+
+        phase = []
+
+        for i in range(batch_size):
+            clipped_freq.append(librosa.core.stft(original_delta[i], center=False))
+            phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
+
+        for i in range(batch_size):
+            for j in range(len(psd_threshold[i])):
+                for k in range(len(psd_threshold[i][j])):
+                    clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
+        clipped_final = []
+
+
+        for i in range(batch_size):
+            clipped_final.append(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False))
+
+        clipped_final = np.array([np.array(i) for i in clipped_final])
+        return clipped_final
 
     def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate,
                       masks, masks_freq, num_loop,
@@ -380,8 +413,12 @@ class Attack:
             # Actually do the optimization
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
-                apply_delta, d, cl, predictions, new_input = sess.run(
-                    (self.apply_delta, self.delta, self.celoss, self.decoded,
+                first_delta, d, rescale_th = sess.run((self.apply_delta, self.delta, self.rescale_th), feed_dict)
+                freq_clipped_perturb = self.clip_freq(self, thresholdPSD(batch_size, th_batch, audios, window_size=2048), apply_delta, batch_size, rescale_th)
+                sess.run(tf.assign(self.apply_delta_th, freq_clipped_perturb))
+
+                apply_delta, cl, predictions, new_input = sess.run(
+                    (self.apply_delta_th, self.celoss, self.decoded,
                      self.new_input), feed_dict)
 
             for ii in range(self.batch_size):
@@ -421,6 +458,7 @@ class Attack:
                             if rescale[ii] > np.max(np.abs(d[ii])):
                                 rescale[ii] = np.max(np.abs(d[ii]))
                             rescale[ii] *= .8
+                            rescale_th[ii] *= 0.8
 
                         # save the best adversarial example
                         final_deltas[ii] = new_input[ii]
@@ -428,7 +466,9 @@ class Attack:
 
                         print("Iteration i=%d, worked ii=%d celoss=%f bound=%f" % (
                             i, ii, cl[ii], rescale[ii]))
+                        print('rescale_th', rescale_th)
                         sess.run(tf.assign(self.rescale, rescale))
+                        sess.run(tf.assign(self.rescale_th, rescale_th))
 
                 # in case no final_delta return
                 if (i == MAX - 1 and final_deltas[ii] is None):
@@ -852,7 +892,7 @@ def main(argv):
             for l in range(num_loops):
 
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                '''
+
                 # stage 1
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
@@ -868,16 +908,16 @@ def main(argv):
                     print("Final distortion for stage 1",
                           np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1.wav"
                     adv_example_float = adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(adv_example_float[:lengths[i]]))
                     print(saved_name)
 
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_perturb.wav"
                     perturb_float = perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
-                '''
+
                 '''
                 # stage 1_robust
                 # read the adversarial examples saved in stage 1
@@ -887,7 +927,7 @@ def main(argv):
 
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_perturb.wav"
                     sample_rate_np, perturb = wav.read(saved_name)
 
                     _, audio_orig = wav.read("./" + str(name) + ".wav")
@@ -911,11 +951,11 @@ def main(argv):
                     print("Final distortion for stage 1_robust",
                           np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_robust.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_robust.wav"
                     adv_example_float = adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(adv_example_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
 
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_robust_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_robust_perturb.wav"
                     perturb_float = perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
@@ -925,7 +965,7 @@ def main(argv):
 
 
                 '''
-
+                '''
                 # stage 2
                 # read the adversarial examples saved in stage 1
 
@@ -935,7 +975,7 @@ def main(argv):
 
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage1_robust_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_robust_perturb.wav"
                     sample_rate_np, perturb = wav.read(saved_name)
 
                     _, audio_orig = wav.read("./" + str(name) + ".wav")
@@ -969,7 +1009,7 @@ def main(argv):
                         loss_th[i]))
 
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage2.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage2.wav"
                     adv_example_float = adv_example[i] / 32768.
                     print('size', np.array(adv_example[i][:lengths[i]]).size)
 
@@ -977,13 +1017,13 @@ def main(argv):
                     print(saved_name)
 
                     name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_stage2_perturb.wav"
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage2_perturb.wav"
                     perturb_float = perturb[i] / 32768.
                     print('size', np.array(adv_example[i][:lengths[i]]).size)
 
                     wav.write(saved_name, 16000, (np.array(perturb_float[:lengths[i]])).transpose())
                     print(saved_name)
-
+                '''
 
 if __name__ == '__main__':
     app.run(main)

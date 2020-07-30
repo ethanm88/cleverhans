@@ -260,6 +260,7 @@ class Attack:
             self.mask_freq = tf.placeholder(dtype=np.float32, shape=[batch_size, None, 80])
             self.noise = tf.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
             self.maxlen = tf.placeholder(np.int32)
+            self.maxlen_int = FLAGS.max_length_dataset
             self.lr_stage2 = tf.placeholder(np.float32)
             self.lr_stage1 = tf.placeholder(np.float32)
             # variable
@@ -279,7 +280,7 @@ class Attack:
 
             self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
-            self.apply_delta_th = tf.Variable(np.zeros((batch_size, self.maxlen), dtype=np.float32), name='qq_appth')
+            self.apply_delta_th = tf.Variable(np.zeros((batch_size, self.maxlen_int), dtype=np.float32), name='qq_appth')
 
             self.new_input = self.apply_delta_th * self.mask + self.input_tf # changed
 
@@ -378,6 +379,7 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise,
                      self.maxlen: maxlen,
+                     self.maxlen_int: maxlen,
                      self.lr_stage2: lr_stage2,
                      self.lr_stage1: lr_stage1
                      }
@@ -421,6 +423,7 @@ class Attack:
                          self.mask_freq: masks_freq,
                          self.noise: noise,
                          self.maxlen: maxlen,
+                         self.maxlen_int: maxlen,
                          self.lr_stage2: lr_stage2,
                          self.lr_stage1: lr_stage1
                          }

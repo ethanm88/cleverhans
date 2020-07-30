@@ -266,7 +266,8 @@ class Attack:
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * FLAGS.initial_bound,
                                        name='qq_rescale')
 
-            self.rescale_th = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * 2.0, name='qq_rescale_th')
+            self.rescale_th = tf.Variable(np.ones((batch_size, FLAGS.max_length_dataset), dtype=np.float32)*2.0,
+                                           name='qq_resth')
 
 
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.001, name='qq_alpha')
@@ -380,7 +381,12 @@ class Attack:
                      self.lr_stage2: lr_stage2,
                      self.lr_stage1: lr_stage1
                      }
-        print()
+        first_delta, d, rescale_th = sess.run((self.apply_delta, self.delta, self.rescale_th), feed_dict)
+
+        freq_clipped_perturb = self.clip_freq(thresholdPSD(batch_size, th_batch, audios, window_size=2048), first_delta,
+                                              batch_size, rescale_th)
+        sess.run(tf.assign(self.apply_delta_th, freq_clipped_perturb))
+
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
         # show the initial predictions

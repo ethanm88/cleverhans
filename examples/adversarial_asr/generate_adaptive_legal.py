@@ -266,8 +266,8 @@ class Attack:
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * FLAGS.initial_bound,
                                        name='qq_rescale')
 
-            self.rescale_th = tf.Variable(np.ones((batch_size, FLAGS.max_length_dataset), dtype=np.float32)*2.0,
-                                           name='qq_resth')
+            self.rescale_th = tf.Variable(np.ones(batch_size, dtype=np.float32) * 2.0,
+                                          name='qq_resth')
 
 
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.001, name='qq_alpha')
@@ -279,7 +279,8 @@ class Attack:
 
             self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
-            self.apply_delta_th = self.clip_freq(thresholdPSD(self.batch_size, self.th, self))
+            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
+                                           name='qq_appth')
 
             self.new_input = self.apply_delta_th * self.mask + self.input_tf # changed
 

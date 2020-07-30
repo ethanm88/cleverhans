@@ -278,13 +278,15 @@ class Attack:
 
 
 
-            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
+
 
             self.apply_delta_th = tf.Variable(np.zeros((batch_size, self.maxlen_int), dtype=np.float32), name='qq_appth')
 
-            self.new_input = self.apply_delta_th * self.mask + self.input_tf # changed
+            self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
 
-            self.actual_input = self.apply_delta_th * self.mask + self.ori_input_tf
+            self.new_input = self.apply_delta * self.mask + self.input_tf # changed
+
+            self.actual_input = self.apply_delta * self.mask + self.ori_input_tf
 
             self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2 ** 15, 2 ** 15 - 1)
 

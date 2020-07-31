@@ -288,9 +288,9 @@ class Attack:
 
             print(tf.shape(self.apply_delta))
 
-            self.new_input = self.apply_delta_th * self.mask + self.input_tf # changed
+            self.new_input = self.apply_delta * self.mask + self.input_tf # changed
 
-            self.actual_input = self.apply_delta_th * self.mask + self.ori_input_tf
+            self.actual_input = self.apply_delta * self.mask + self.ori_input_tf
 
             self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2 ** 15, 2 ** 15 - 1)
 

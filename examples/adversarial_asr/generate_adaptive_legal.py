@@ -287,7 +287,7 @@ class Attack:
             self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
             print(tf.shape(self.apply_delta))
-            tf.print(self.apply_delta)
+            print(self.apply_delta)
 
             self.apply_delta_th = tf.Variable(m)
 

@@ -280,13 +280,17 @@ class Attack:
 
             #np.zeros((batch_size, self.maxlen_int), dtype=np.float32)
             m = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
-            self.apply_delta_th = tf.Variable(m)
-
-            print(tf.shape(self.apply_delta_th))
+            print(tf.shape(m))
 
             self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
             print(tf.shape(self.apply_delta))
+
+            self.apply_delta_th = tf.Variable(m)
+
+            print(tf.shape(self.apply_delta_th))
+
+
 
             self.new_input = self.apply_delta * self.mask + self.input_tf # changed
 

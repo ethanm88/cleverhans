@@ -279,7 +279,7 @@ class Attack:
 
 
             #np.zeros((batch_size, self.maxlen_int), dtype=np.float32)
-            self.apply_delta_th = tf.Variable(tf.identify(tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])), name='qq_appth')
+            self.apply_delta_th = tf.Variable((tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])), name='qq_appth')
 
             print(tf.shape(self.apply_delta_th))
 

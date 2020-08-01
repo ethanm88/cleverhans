@@ -279,8 +279,9 @@ class Attack:
 
 
 
-            self.apply_delta_th = tf.Variable(tf.identity(self.delta))
+            #self.apply_delta_th = tf.Variable(tf.identity(self.delta))
 
+            self.apply_delta_th = self.clip_freq(self)
 
             self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
 
@@ -326,7 +327,42 @@ class Attack:
         self.train22 = self.optimizer2.apply_gradients([(grad22, var22)])
         self.train2 = tf.group(self.train21, self.train22)
 
-    def clip_freq(self, psd_threshold, delta, batch_size, rescale_th):
+    def clip_freq(self):
+        #, psd_threshold, delta, batch_size, rescale_th
+        original_delta = np.copy((self.delta).numpy())
+        batch_size = self.batch_size
+        rescale_th = np.copy((self.rescale_th).numpy())
+
+        th_batch = self.th.numpy()
+
+        audios = (self.audios).numpy()
+
+        psd_threshold = thresholdPSD(batch_size, self.th_batch, audios, window_size=2048)
+
+        clipped_freq = []
+
+        phase = []
+
+        for i in range(batch_size):
+            clipped_freq.append(np.transpose(librosa.core.stft(original_delta[i], center=False)))
+            phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
+        print(self.maxlen)
+        print(np.shape(clipped_freq))
+        print(np.shape(psd_threshold))
+        for i in range(batch_size):
+            for j in range(len(psd_threshold[i])):
+                for k in range(len(psd_threshold[i][j])):
+                    clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
+        clipped_final = []
+
+        for i in range(batch_size):
+            clipped_final.append(
+                librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False))
+
+        clipped_final = np.array([np.array(i) for i in clipped_final])
+        return clipped_final
+
+    def clip_freq1(self, psd_threshold, delta, batch_size, rescale_th):
 
         original_delta = np.copy(delta)
         clipped_freq = []
@@ -388,7 +424,7 @@ class Attack:
                      }
         first_delta, d, rescale_th = sess.run((self.apply_delta, self.delta, self.rescale_th), feed_dict)
 
-        freq_clipped_perturb = self.clip_freq(thresholdPSD(batch_size, th_batch, audios, window_size=2048), first_delta,
+        freq_clipped_perturb = self.clip_freq1(thresholdPSD(batch_size, th_batch, audios, window_size=2048), first_delta,
                                               batch_size, rescale_th)
         sess.run(tf.assign(self.apply_delta_th, freq_clipped_perturb))
 

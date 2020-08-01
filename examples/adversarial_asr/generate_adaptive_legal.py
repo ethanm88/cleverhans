@@ -2,6 +2,7 @@ import pickle
 import pprint
 
 import tensorflow as tf
+tf.enable_eager_execution()
 import os
 from lingvo import model_imports
 from lingvo import model_registry
@@ -328,6 +329,7 @@ class Attack:
         self.train2 = tf.group(self.train21, self.train22)
 
     def clip_freq(self):
+
         #, psd_threshold, delta, batch_size, rescale_th
         original_delta = np.copy((self.delta).numpy())
         batch_size = self.batch_size

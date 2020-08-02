@@ -237,7 +237,7 @@ class Attack:
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
 
-        self.is_init = False
+        self.is_init = True
         # self.lr_stage1 = lr_stage1
 
         tf.set_random_seed(1234)
@@ -332,7 +332,7 @@ class Attack:
 
     def clip_freq(self):
 
-        if self.is_init == False:
+        if self.is_init == True:
             return self.delta
         sess = self.sess
         '''
@@ -421,6 +421,8 @@ class Attack:
         sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32) * FLAGS.initial_bound))
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
 
+        self.is_init = False
+
         # noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
 
@@ -440,7 +442,7 @@ class Attack:
                      self.maxlen: maxlen,
                      self.lr_stage2: lr_stage2,
                      self.lr_stage1: lr_stage1,
-                     self.is_init : False
+
                      }
 
 
@@ -481,7 +483,7 @@ class Attack:
                          self.maxlen_int: maxlen,
                          self.lr_stage2: lr_stage2,
                          self.lr_stage1: lr_stage1,
-                         self.is_init: False
+
 
                          }
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
@@ -505,7 +507,7 @@ class Attack:
                 apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
-                
+
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
 

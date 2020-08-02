@@ -385,7 +385,7 @@ class Attack:
                 librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False))
 
         clipped_final = np.array([np.array(i) for i in clipped_final])
-        return clipped_final
+        return tf.convert_to_tensor(clipped_final)
 
     def clip_freq1(self, psd_threshold, delta, batch_size, rescale_th):
 

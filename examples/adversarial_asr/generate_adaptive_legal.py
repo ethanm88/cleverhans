@@ -355,7 +355,7 @@ class Attack:
         batch_size = self.batch_size
         rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
 
-        th_batch = self.th.numpy()
+        th_batch = np.copy(sess.run((self.th), feed_dict))
 
         audios = np.copy(sess.run((self.audios), feed_dict))
 

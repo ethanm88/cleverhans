@@ -360,7 +360,7 @@ class Attack:
         audios = np.copy(sess.run((self.ori_input_tf), feed_dict))
 
 
-        psd_threshold = thresholdPSD(batch_size, self.th_batch, audios, window_size=2048)
+        psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
 
         clipped_freq = []
 

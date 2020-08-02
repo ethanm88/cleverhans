@@ -354,6 +354,7 @@ class Attack:
         original_delta = np.copy(sess.run((self.delta), feed_dict))
         batch_size = self.batch_size
         rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
+        print(rescale_th)
 
         th_batch = np.copy(sess.run((self.th), feed_dict))
 
@@ -375,7 +376,7 @@ class Attack:
         for i in range(batch_size):
             for j in range(len(psd_threshold[i])):
                 for k in range(len(psd_threshold[i][j])):
-                    if clipped_freq[i][j][k] > psd_threshold[i][j][k] * rescale_th[i]:
+                    if clipped_freq[i][j][k] < psd_threshold[i][j][k] * rescale_th[i]:
                         print(i,j,k)
                     clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
 

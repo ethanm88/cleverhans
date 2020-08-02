@@ -333,6 +333,7 @@ class Attack:
     def clip_freq(self):
 
         if self.is_init == True:
+            print("hello")
             return self.delta
         sess = self.sess
         '''

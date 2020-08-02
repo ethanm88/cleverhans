@@ -330,6 +330,8 @@ class Attack:
 
     def clip_freq(self):
 
+        sess = self.sess
+        '''
         #, psd_threshold, delta, batch_size, rescale_th
         original_delta = np.copy((self.delta).numpy())
         batch_size = self.batch_size
@@ -338,6 +340,17 @@ class Attack:
         th_batch = self.th.numpy()
 
         audios = (self.audios).numpy()
+        
+        '''
+
+        original_delta = np.copy(sess.run((self.delta)))
+        batch_size = self.batch_size
+        rescale_th = np.copy(sess.run((self.rescale_th)))
+
+        th_batch = self.th.numpy()
+
+        audios = np.copy(sess.run((self.audios)))
+
 
         psd_threshold = thresholdPSD(batch_size, self.th_batch, audios, window_size=2048)
 

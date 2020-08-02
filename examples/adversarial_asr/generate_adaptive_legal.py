@@ -506,8 +506,8 @@ class Attack:
                      self.new_input), feed_dict)
                 '''
 
-                apply_delta, d, cl, predictions, new_input = sess.run(
-                    (self.apply_delta, self.delta, self.celoss, self.decoded,
+                apply_delta_th, apply_delta, d, cl, predictions, new_input = sess.run(
+                    (self.apply_delta_th, self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
 
             for ii in range(self.batch_size):

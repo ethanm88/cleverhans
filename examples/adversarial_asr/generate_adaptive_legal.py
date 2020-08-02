@@ -536,6 +536,7 @@ class Attack:
                     if WER >= min_difference:
                         print("-------------------------------True--------------------------")
                         rescale = sess.run(self.rescale)
+                        rescale_th = sess.run(self.rescale_th)
                         # update rescale
                         if i % 10 == 0:
                             if rescale[ii] > np.max(np.abs(d[ii])):

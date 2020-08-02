@@ -357,7 +357,7 @@ class Attack:
 
         th_batch = np.copy(sess.run((self.th), feed_dict))
 
-        audios = np.copy(sess.run((self.audios), feed_dict))
+        audios = np.copy(sess.run((self.ori_input_tf), feed_dict))
 
 
         psd_threshold = thresholdPSD(batch_size, self.th_batch, audios, window_size=2048)

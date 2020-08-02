@@ -237,7 +237,7 @@ class Attack:
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
 
-        self.is_init = True
+        is_init = True
         # self.lr_stage1 = lr_stage1
 
         tf.set_random_seed(1234)
@@ -247,6 +247,7 @@ class Attack:
         params.cluster.worker.gpus_per_replica = 1
         cluster = cluster_factory.Cluster(params.cluster)
         with cluster, tf.device(cluster.GetPlacer()):
+
             model = params.cls(params)
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
                                            name='qq_delta')
@@ -1006,7 +1007,7 @@ def main(argv):
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
 
-                '''
+
                 # stage 1_robust
                 # read the adversarial examples saved in stage 1
 
@@ -1063,10 +1064,7 @@ def main(argv):
 
                 for i in range(batch_size):
                     name, _ = data_sub[0, i].split(".")
-                    #saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_robust_perturb.wav"
-                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_perturb.wav"
-
-
+                    saved_name = FLAGS.root_dir + str(name) + "_adaptive_untargeted_legal_stage1_robust_perturb.wav"
                     sample_rate_np, perturb = wav.read(saved_name)
 
                     _, audio_orig = wav.read("./" + str(name) + ".wav")
@@ -1114,7 +1112,7 @@ def main(argv):
 
                     wav.write(saved_name, 16000, (np.array(perturb_float[:lengths[i]])).transpose())
                     print(saved_name)
-
+                '''
 
 if __name__ == '__main__':
     app.run(main)

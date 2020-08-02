@@ -284,7 +284,8 @@ class Attack:
 
             #self.apply_delta_th = tf.Variable(tf.identity(self.delta))
 
-            self.apply_delta_th = self.clip_freq()
+            place_holder_dict = {}
+            self.apply_delta_th = self.clip_freq(place_holder_dict)
 
             self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
 
@@ -330,7 +331,7 @@ class Attack:
         self.train22 = self.optimizer2.apply_gradients([(grad22, var22)])
         self.train2 = tf.group(self.train21, self.train22)
 
-    def clip_freq(self):
+    def clip_freq(self, feed_dict):
         print('entered')
         if self.is_init == True:
             print("hello")
@@ -350,13 +351,13 @@ class Attack:
 
         print('worked!!!')
 
-        original_delta = np.copy(sess.run((self.delta)))
+        original_delta = np.copy(sess.run((self.delta), feed_dict))
         batch_size = self.batch_size
-        rescale_th = np.copy(sess.run((self.rescale_th)))
+        rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
 
         th_batch = self.th.numpy()
 
-        audios = np.copy(sess.run((self.audios)))
+        audios = np.copy(sess.run((self.audios), feed_dict))
 
 
         psd_threshold = thresholdPSD(batch_size, self.th_batch, audios, window_size=2048)
@@ -505,7 +506,7 @@ class Attack:
                     (self.apply_delta_th, self.celoss, self.decoded,
                      self.new_input), feed_dict)
                 '''
-                self.apply_delta_th = self.clip_freq()
+                self.apply_delta_th = self.clip_freq(feed_dict)
                 apply_delta_th, apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.apply_delta_th, self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)

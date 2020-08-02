@@ -1002,7 +1002,7 @@ def main(argv):
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
 
-                '''
+
                 # stage 1_robust
                 # read the adversarial examples saved in stage 1
 
@@ -1048,7 +1048,7 @@ def main(argv):
 
 
 
-                '''
+
                 '''
                 # stage 2
                 # read the adversarial examples saved in stage 1

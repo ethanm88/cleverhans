@@ -441,8 +441,7 @@ class Attack:
                      self.noise: noise,
                      self.maxlen: maxlen,
                      self.lr_stage2: lr_stage2,
-                     self.lr_stage1: lr_stage1,
-
+                     self.lr_stage1: lr_stage1
                      }
 
 
@@ -480,11 +479,8 @@ class Attack:
                          self.mask_freq: masks_freq,
                          self.noise: noise,
                          self.maxlen: maxlen,
-                         self.maxlen_int: maxlen,
                          self.lr_stage2: lr_stage2,
-                         self.lr_stage1: lr_stage1,
-
-
+                         self.lr_stage1: lr_stage1
                          }
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 

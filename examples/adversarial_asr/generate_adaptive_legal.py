@@ -331,7 +331,7 @@ class Attack:
         self.train2 = tf.group(self.train21, self.train22)
 
     def clip_freq(self):
-
+        print('entered')
         if self.is_init == True:
             print("hello")
             return self.delta

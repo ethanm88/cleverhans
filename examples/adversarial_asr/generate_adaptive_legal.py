@@ -439,13 +439,10 @@ class Attack:
                      self.noise: noise,
                      self.maxlen: maxlen,
                      self.lr_stage2: lr_stage2,
-                     self.lr_stage1: lr_stage1
+                     self.lr_stage1: lr_stage1,
+                     self.is_init : False
                      }
-        first_delta, d, rescale_th = sess.run((self.apply_delta, self.delta, self.rescale_th), feed_dict)
 
-        freq_clipped_perturb = self.clip_freq1(thresholdPSD(batch_size, th_batch, audios, window_size=2048), first_delta,
-                                              batch_size, rescale_th)
-        sess.run(tf.assign(self.apply_delta_th, freq_clipped_perturb))
 
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
@@ -483,13 +480,18 @@ class Attack:
                          self.maxlen: maxlen,
                          self.maxlen_int: maxlen,
                          self.lr_stage2: lr_stage2,
-                         self.lr_stage1: lr_stage1
+                         self.lr_stage1: lr_stage1,
+                         self.is_init: False
+
                          }
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
+
+                '''
+                
                 first_delta, d, rescale_th = sess.run((self.apply_delta, self.delta, self.rescale_th), feed_dict)
 
                 freq_clipped_perturb = self.clip_freq(thresholdPSD(batch_size, th_batch, audios, window_size=2048), first_delta, batch_size, rescale_th)
@@ -498,7 +500,12 @@ class Attack:
                 apply_delta, cl, predictions, new_input = sess.run(
                     (self.apply_delta_th, self.celoss, self.decoded,
                      self.new_input), feed_dict)
+                '''
 
+                apply_delta, d, cl, predictions, new_input = sess.run(
+                    (self.apply_delta, self.delta, self.celoss, self.decoded,
+                     self.new_input), feed_dict)
+                
             for ii in range(self.batch_size):
                 # print out the prediction each 100 iterations
 

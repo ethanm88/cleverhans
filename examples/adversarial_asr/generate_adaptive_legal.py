@@ -237,7 +237,7 @@ class Attack:
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
 
-        is_init = True
+        self.is_init = True
         # self.lr_stage1 = lr_stage1
 
         tf.set_random_seed(1234)
@@ -247,7 +247,6 @@ class Attack:
         params.cluster.worker.gpus_per_replica = 1
         cluster = cluster_factory.Cluster(params.cluster)
         with cluster, tf.device(cluster.GetPlacer()):
-
             model = params.cls(params)
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
                                            name='qq_delta')
@@ -348,6 +347,8 @@ class Attack:
         audios = (self.audios).numpy()
         
         '''
+
+        print('worked!!!')
 
         original_delta = np.copy(sess.run((self.delta)))
         batch_size = self.batch_size

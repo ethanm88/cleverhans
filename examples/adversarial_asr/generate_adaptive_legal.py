@@ -374,8 +374,11 @@ class Attack:
         print(np.shape(clipped_freq))
         print(np.shape(psd_threshold))
         for i in range(batch_size):
+            print(i)
             for j in range(len(psd_threshold[i])):
+                print(j)
                 for k in range(len(psd_threshold[i][j])):
+                    print(k)
                     if clipped_freq[i][j][k] < psd_threshold[i][j][k] * rescale_th[i]:
                         print(i,j,k)
                     clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])

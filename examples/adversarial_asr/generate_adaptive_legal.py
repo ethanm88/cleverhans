@@ -236,6 +236,8 @@ class Attack:
         self.num_iter_stage1_robust = num_iter_stage1_robust
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
+
+        self.is_init = False
         # self.lr_stage1 = lr_stage1
 
         tf.set_random_seed(1234)
@@ -330,6 +332,8 @@ class Attack:
 
     def clip_freq(self):
 
+        if self.is_init == False:
+            return self.delta
         sess = self.sess
         '''
         #, psd_threshold, delta, batch_size, rescale_th

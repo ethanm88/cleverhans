@@ -379,10 +379,10 @@ class Attack:
         for i in range(batch_size):
             for j in range(len(psd_threshold[i])):
                 for k in range(len(psd_threshold[i][j])):
-                    if(clipped_freq[i][j][k] > psd_threshold[i][j][k] * rescale_th[i]):
-                        print(i,j,k)
-                    print(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
+                    clip_temp = clipped_freq[i][j][k]
                     clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
+                    if(clip_temp != clipped_freq[i][j][k]):
+                        print('suc')
 
         clipped_final = []
 

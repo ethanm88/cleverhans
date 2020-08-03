@@ -370,15 +370,12 @@ class Attack:
         phase = []
 
         for i in range(batch_size):
-            clipped_freq.append(np.transpose(librosa.core.stft(original_delta[i], center=False)))
+            clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta[i], center=False))))
             phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
         print(self.maxlen)
         print(np.shape(clipped_freq))
         print(np.shape(psd_threshold))
-        plt.plot((clipped_freq[0][10]), label='Perturb')
-
-        plt.plot((psd_threshold[0][10]),
-                 label='Masking Threshold')
+      
         for i in range(batch_size):
             for j in range(len(psd_threshold[i])):
                 for k in range(len(psd_threshold[i][j])):

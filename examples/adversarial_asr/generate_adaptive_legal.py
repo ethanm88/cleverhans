@@ -127,7 +127,9 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
     for i in range(batch_size):
         th_batch[i] = np.copy(th_batch[i]).resize(len(audios[i]))
         win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
+        print("win",win)
         z = abs(win / window_size)
+        print("z", win)
         psd_max = np.max(z * z)
 
         #th_batch[i] = np.copy(th_batch[i])

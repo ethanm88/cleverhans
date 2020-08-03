@@ -516,8 +516,8 @@ class Attack:
                      self.new_input), feed_dict)
                 '''
                 self.apply_delta_th = self.clip_freq(feed_dict)
-                loss_th, apply_delta_th, apply_delta, d, cl, predictions, new_input = sess.run(
-                    (self.loss_th, self.apply_delta_th, self.apply_delta, self.delta, self.celoss, self.decoded,
+                loss_th, apply_delta, d, cl, predictions, new_input = sess.run(
+                    (self.loss_th, self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
 
                 print("Loss th: ", loss_th)

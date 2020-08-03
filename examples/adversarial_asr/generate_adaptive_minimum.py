@@ -432,8 +432,7 @@ class Attack:
                     print("Every:")
                     print("iteration_Test: %d" % (i))
                     print("loss_ce_Test: %f" % (cl[ii]))
-                    print("Current distortion",
-                          np.max(np.abs(new_input[ii][:lengths[ii]] - noisy_audios[i % 100])))
+                    #print("Current distortion", np.max(np.abs(new_input[ii][:lengths[ii]] - noisy_audios[i % 100])))
 
                     with open("loss_ce.txt", "a") as text_file:
                         text_file.write(str(cl[ii]) + "\n")
@@ -792,13 +791,15 @@ class Attack:
                 apply_delta, d, cl, l, predictions, new_input = sess.run(
                     (self.apply_delta, self.delta, self.celoss, self.loss_th, self.decoded, self.new_input), feed_dict)
 
-            if i % 10 == 0:
+            if FLAGS.adaptive == True:
+
                 if i % 10 == 0:
-                    index = random.randint(0, 49)
-                    while index == cur_file:
+                    if i % 10 == 0:
                         index = random.randint(0, 49)
-                    noisy_audios_testing = read_noisy(num_loop, batch_size,
-                                                      index)  # get random noise file - move into loop when get better gpu
+                        while index == cur_file:
+                            index = random.randint(0, 49)
+                        noisy_audios_testing = read_noisy(num_loop, batch_size,
+                                                          index)  # get random noise file - move into loop when get better gpu
 
             for ii in range(self.batch_size):
                 # print out the prediction each 50 iterations

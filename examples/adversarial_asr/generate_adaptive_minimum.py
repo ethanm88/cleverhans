@@ -888,9 +888,15 @@ class Attack:
                             sess.run(tf.assign(self.alpha, alpha))
 
                     else:
-                        if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
+
+                        WER = wer_calculation.wer(trans[ii].lower().split(), predictions['topk_decoded'][ii, 0].split())
+                        print("WER: ", WER)
+
+                        # if predictions['topk_decoded'][ii, 0] == trans[ii].lower():
+                        if WER >= min_difference:
                             if l[ii] < loss_th[ii]:
                                 final_deltas[ii] = new_input[ii]
+                                final_perturb[ii] = apply_delta[ii]
                                 loss_th[ii] = l[ii]
                                 final_alpha[ii] = alpha[ii]
                                 print("-------------------------------------Succeed---------------------------------")
@@ -902,7 +908,7 @@ class Attack:
                                 sess.run(tf.assign(self.alpha, alpha))
 
                         # if the network fails to make the targeted prediction, reduce alpha each 50 iterations
-                        if i % 50 == 0 and predictions['topk_decoded'][ii, 0] != trans[ii].lower():
+                        if i % 50 == 0 and WER <= min_difference:
                             alpha[ii] *= 0.8
                             alpha[ii] = max(alpha[ii], min_th)
                             sess.run(tf.assign(self.alpha, alpha))
@@ -946,7 +952,7 @@ def main(argv):
             for l in range(num_loops):
 
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-
+                '''
                 # stage 1
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
@@ -971,7 +977,7 @@ def main(argv):
                     perturb_float = perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2 ** 15, 2 ** 15 - 1)))
                     print(saved_name)
-
+                '''
                 '''
                 # stage 1_robust
                 # read the adversarial examples saved in stage 1

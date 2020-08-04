@@ -231,7 +231,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100, lr_stage2=1, num_iter_stage1=200, num_iter_stage1_robust=200, num_iter_stage2=4000, maxlen_int_1=5,
+                 lr_stage1=100, lr_stage2=1, num_iter_stage1=200, num_iter_stage1_robust=200, num_iter_stage2=4000, maxlen_int_1=5,maxlen_int=5,
                  th=None,
                  psd_max_ori=None):
 

@@ -385,9 +385,11 @@ class Attack:
         phase = []
         print(original_delta[0])
         print(type(original_delta[0]))
+
+        original_delta_np = []
         for i in range(batch_size):
-            original_delta[i] = np.resize((original_delta[i]),(maxlen_data_set))
-            clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta[i], center=False))))
+            original_delta_np.append(np.resize((original_delta[i]),(maxlen_data_set)))
+            clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta_np[i], center=False))))
             phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
         print(self.maxlen)
         print(np.shape(clipped_freq))
@@ -402,8 +404,8 @@ class Attack:
         clipped_final = []
 
         for i in range(batch_size):
-            clipped_final.append(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False))
-            clipped_final[i] = clipped_final[i].resize(FLAGS.max_length_dataset)
+            clipped_final.append(np.resize(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False)), FLAGS.max_length_dataset)
+            #clipped_final[i] = clipped_final[i].resize(FLAGS.max_length_dataset)
 
         clipped_final = np.array([np.array(i) for i in clipped_final])
         return tf.convert_to_tensor(clipped_final)

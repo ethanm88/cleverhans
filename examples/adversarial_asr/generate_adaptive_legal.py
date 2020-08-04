@@ -248,6 +248,7 @@ class Attack:
         params.is_eval = True
         params.cluster.worker.gpus_per_replica = 1
         cluster = cluster_factory.Cluster(params.cluster)
+        self.feed_dict = {}
         with cluster, tf.device(cluster.GetPlacer()):
             model = params.cls(params)
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
@@ -284,15 +285,16 @@ class Attack:
 
 
 
+
             #self.apply_delta_th = tf.Variable(tf.identity(self.delta))
 
-            place_holder_dict = {}
+
             #self.apply_delta_th = self.clip_freq(place_holder_dict)
-            self.apply_delta_th = tf.Variable((self.clip_freq(place_holder_dict)))
+            self.apply_delta_th = (self.clip_freq(self.feed_dict))
 
 
-            self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
-
+            #self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
+            self.apply_delta = tf.clip_by_value(self.clip_freq(self.feed_dict), -self.rescale, self.rescale)
 
 
             self.new_input = self.apply_delta * self.mask + self.input_tf # changed
@@ -459,7 +461,7 @@ class Attack:
                      self.lr_stage2: lr_stage2,
                      self.lr_stage1: lr_stage1
                      }
-
+        self.feed_dict = feed_dict
 
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
@@ -498,6 +500,8 @@ class Attack:
                          self.lr_stage2: lr_stage2,
                          self.lr_stage1: lr_stage1
                          }
+            self.feed_dict = feed_dict
+
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization

@@ -287,7 +287,9 @@ class Attack:
             #self.apply_delta_th = tf.Variable(tf.identity(self.delta))
 
             place_holder_dict = {}
-            self.apply_delta_th = self.clip_freq(place_holder_dict)
+            #self.apply_delta_th = self.clip_freq(place_holder_dict)
+            self.apply_delta_th = tf.Variable((self.clip_freq(place_holder_dict)))
+
 
             self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
 

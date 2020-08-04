@@ -1001,7 +1001,7 @@ def main(argv):
             for l in range(num_loops):
 
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-                raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
+                raw_audio, audios, trans, th_batch, psd_max_batch, maxlenth, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
 
             # set up the attack class
@@ -1010,8 +1010,9 @@ def main(argv):
                             lr_stage1=FLAGS.lr_stage1,
                             lr_stage2=FLAGS.lr_stage2,
                             num_iter_stage1=FLAGS.num_iter_stage1,
-                            num_iter_stage2=FLAGS.num_iter_stage2,
-                            maxlen_int=maxlen
+                            #num_iter_stage2=FLAGS.num_iter_stage2,
+                            num_iter_stage2=maxlenth,
+                            maxlen_int=maxlenth
                             )
             num_loops = 1
             batch_size = 1

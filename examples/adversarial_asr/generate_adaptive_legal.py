@@ -345,7 +345,7 @@ class Attack:
         print(feed_dict)
         if self.is_init == True:
             print("hello")
-            return self.delta
+            return tf.identity(self.delta)
         sess = self.sess
         '''
         #, psd_threshold, delta, batch_size, rescale_th

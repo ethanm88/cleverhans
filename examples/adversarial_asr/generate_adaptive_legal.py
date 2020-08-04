@@ -229,7 +229,7 @@ def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv exam
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_stage1=100, lr_stage2=1, num_iter_stage1=200, num_iter_stage1_robust=200, num_iter_stage2=4000,
+                 lr_stage1=100, lr_stage2=1, num_iter_stage1=200, num_iter_stage1_robust=200, num_iter_stage2=4000, maxlen_int=5,
                  th=None,
                  psd_max_ori=None):
 
@@ -292,7 +292,9 @@ class Attack:
 
             #self.apply_delta_th = self.clip_freq(place_holder_dict)
             #self.apply_delta_th = (self.clip_freq(self.feed_dict))
-            self.apply_delta_th = tf.Variable(self.clip_freq(self.feed_dict),name='qq_delta_1')
+            #self.clip_freq(self.feed_dict)
+            self.apply_delta_th = tf.Variable(np.zeros((batch_size, maxlen_int), dtype=np.float32),
+                                           name='qq_apply_delta_th')
 
 
 
@@ -987,16 +989,27 @@ def main(argv):
     num_loops = num / batch_size
     assert num % batch_size == 0
 
+
+
     with tf.device("/gpu:0"):  # changed
         tfconf = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=tfconf) as sess:
+
+            for l in range(num_loops):
+
+                data_sub = data[:, l * batch_size:(l + 1) * batch_size]
+                raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
+                    data_sub, batch_size)
+
             # set up the attack class
             attack = Attack(sess,
                             batch_size=batch_size,
                             lr_stage1=FLAGS.lr_stage1,
                             lr_stage2=FLAGS.lr_stage2,
                             num_iter_stage1=FLAGS.num_iter_stage1,
-                            num_iter_stage2=FLAGS.num_iter_stage2)
+                            num_iter_stage2=FLAGS.num_iter_stage2,
+                            maxlen_int=maxlen
+                            )
             num_loops = 1
             batch_size = 1
             for l in range(num_loops):

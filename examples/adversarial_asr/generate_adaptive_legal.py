@@ -1003,7 +1003,7 @@ def main(argv):
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size]
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlenth, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
-            print("maxlen",maxlenth)
+                print("maxlen",maxlenth)
             # set up the attack class
             attack = Attack(sess,
                             batch_size=batch_size,

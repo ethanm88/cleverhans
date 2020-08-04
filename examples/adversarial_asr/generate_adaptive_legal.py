@@ -517,7 +517,7 @@ class Attack:
             # Actually do the optimization
             sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
-            sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+            #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             if i % 10 == 0:
 
                 '''
@@ -532,6 +532,8 @@ class Attack:
                      self.new_input), feed_dict)
                 '''
 
+                sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+                apply_delta = sess.run((self.apply_delta))
 
                 loss_th, apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.loss_th, self.apply_delta, self.delta, self.celoss, self.decoded,
@@ -581,6 +583,7 @@ class Attack:
 
                         # save the best adversarial example
                         final_deltas[ii] = new_input[ii]
+
                         final_perturb[ii] = apply_delta[ii]
 
                         print("Iteration i=%d, worked ii=%d celoss=%f bound=%f" % (
@@ -681,6 +684,7 @@ class Attack:
                          }
 
             # Actually do the optimization
+            sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
                 apply_delta, d, cl, predictions, new_input = sess.run(

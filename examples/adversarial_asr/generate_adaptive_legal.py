@@ -1018,11 +1018,12 @@ def main(argv):
                 # all the output are numpy arrays
                 raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
                     data_sub, batch_size)
+                print("maxlen", maxlen)
 
                 adv_example, perturb = attack.attack_stage1(raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
                                                    masks_freq, l, data_sub, FLAGS.lr_stage2, FLAGS.lr_stage1)
 
-                print("maxlen", maxlen)
+
 
                 # save the adversarial examples in stage 1
                 for i in range(batch_size):

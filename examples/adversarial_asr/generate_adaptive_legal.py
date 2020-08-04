@@ -533,7 +533,7 @@ class Attack:
                 '''
 
                 sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
-                apply_delta = sess.run((self.apply_delta))
+                apply_delta = sess.run((self.apply_delta), feed_dict)
 
                 loss_th, apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.loss_th, self.apply_delta, self.delta, self.celoss, self.decoded,

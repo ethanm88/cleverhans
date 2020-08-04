@@ -383,17 +383,14 @@ class Attack:
         clipped_freq = []
 
         phase = []
-        print(original_delta[0])
-        print(type(original_delta[0]))
+
 
         original_delta_np = []
         for i in range(batch_size):
             original_delta_np.append(np.resize((original_delta[i]),(maxlen_data_set)))
             clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta_np[i], center=False))))
             phase = ((np.angle(librosa.core.stft(original_delta_np[i], center=False))))
-        print(self.maxlen)
-        print(np.shape(clipped_freq))
-        print(np.shape(psd_threshold))
+
 
         for i in range(batch_size):
             for j in range(len(psd_threshold[i])):
@@ -520,7 +517,9 @@ class Attack:
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
+            print('start')
             sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+            print('end')
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
 

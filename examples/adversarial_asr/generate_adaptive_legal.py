@@ -284,7 +284,9 @@ class Attack:
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.001, name='qq_alpha')
 
             # extract the delta
-            self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
+            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
+                                           name='qq_apply_delta_th')
+            self.delta = tf.slice(tf.identity(self.apply_delta_th), [0, 0], [batch_size, self.maxlen])
 
 
 
@@ -297,13 +299,12 @@ class Attack:
             #self.apply_delta_th = self.clip_freq(place_holder_dict)
             #self.apply_delta_th = (self.clip_freq(self.feed_dict))
             #self.clip_freq(self.feed_dict)
-            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.maxlen), dtype=np.float32),
-                                           name='qq_apply_delta_th')
+
 
 
 
             #self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
-            self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
+            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
 
             self.new_input = self.apply_delta * self.mask + self.input_tf # changed

@@ -277,7 +277,7 @@ class Attack:
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * FLAGS.initial_bound,
                                        name='qq_rescale')
 
-            self.rescale_th = tf.Variable(np.ones(batch_size, dtype=np.float32) * 0.1,
+            self.rescale_th = tf.Variable(np.ones(batch_size, dtype=np.float32) * 2.0,
                                           name='qq_resth')
 
 

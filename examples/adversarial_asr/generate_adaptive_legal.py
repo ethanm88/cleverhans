@@ -347,7 +347,6 @@ class Attack:
         self.train2 = tf.group(self.train21, self.train22)
 
     def clip_freq(self, feed_dict):
-        print('entered')
         #print(feed_dict)
         if self.is_init == True:
             print("hello")
@@ -365,7 +364,6 @@ class Attack:
         
         '''
 
-        print('worked!!!')
 
         original_delta = (sess.run((self.delta_large), feed_dict)).copy()
         maxlen_data_set = sess.run((self.maxlen), feed_dict)
@@ -517,9 +515,7 @@ class Attack:
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
-            print('start')
             sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
-            print('end')
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
 

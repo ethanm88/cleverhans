@@ -253,6 +253,8 @@ class Attack:
             model = params.cls(params)
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
                                            name='qq_delta')
+            self.delta_large_1 = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
+                                           name='qq_delta_1')
 
             # placeholders
             self.input_tf = tf.placeholder(tf.float32, shape=[batch_size, None], name='qq_input')

@@ -297,7 +297,7 @@ class Attack:
 
 
             #self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
-            self.apply_delta = tf.clip_by_value(self.clip_freq(self.feed_dict), -self.rescale, self.rescale)
+            self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
 
 
             self.new_input = self.apply_delta * self.mask + self.input_tf # changed
@@ -345,7 +345,7 @@ class Attack:
         print(feed_dict)
         if self.is_init == True:
             print("hello")
-            return self.delta_large
+            return self.delta
         sess = self.sess
         '''
         #, psd_threshold, delta, batch_size, rescale_th

@@ -348,7 +348,7 @@ class Attack:
 
     def clip_freq(self, feed_dict):
         print('entered')
-        print(feed_dict)
+        #print(feed_dict)
         if self.is_init == True:
             print("hello")
             return tf.identity(self.delta)
@@ -371,7 +371,7 @@ class Attack:
         maxlen_data_set = sess.run((self.maxlen), feed_dict)
         batch_size = self.batch_size
         rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
-        print(rescale_th)
+        #print(rescale_th)
 
         th_batch = np.copy(sess.run((self.th), feed_dict))
 
@@ -383,9 +383,9 @@ class Attack:
         clipped_freq = []
 
         phase = []
-
+        print(original_delta)
         for i in range(batch_size):
-            original_delta[i] = original_delta[i].resize(maxlen_data_set)
+            original_delta[i] = (original_delta[i]).resize(maxlen_data_set)
             clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta[i], center=False))))
             phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
         print(self.maxlen)

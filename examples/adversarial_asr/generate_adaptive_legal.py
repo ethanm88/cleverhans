@@ -383,7 +383,8 @@ class Attack:
         clipped_freq = []
 
         phase = []
-        print(original_delta)
+        print(original_delta[0])
+        print(type(original_delta[0]))
         for i in range(batch_size):
             original_delta[i] = (original_delta[i]).resize(maxlen_data_set)
             clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta[i], center=False))))

@@ -302,7 +302,7 @@ class Attack:
 
 
             #self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
-            self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
+            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
 
             self.new_input = self.apply_delta * self.mask + self.input_tf # changed
@@ -1011,6 +1011,7 @@ def main(argv):
                             lr_stage2=FLAGS.lr_stage2,
                             num_iter_stage1=FLAGS.num_iter_stage1,
                             num_iter_stage2=FLAGS.num_iter_stage2
+
                             )
             num_loops = 1
             batch_size = 1

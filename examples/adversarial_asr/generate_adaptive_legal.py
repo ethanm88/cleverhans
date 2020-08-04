@@ -404,7 +404,7 @@ class Attack:
         clipped_final = []
 
         for i in range(batch_size):
-            clipped_final.append(np.resize(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False)), FLAGS.max_length_dataset)
+            clipped_final.append(np.resize(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False), FLAGS.max_length_dataset))
             #clipped_final[i] = clipped_final[i].resize(FLAGS.max_length_dataset)
 
         clipped_final = np.array([np.array(i) for i in clipped_final])

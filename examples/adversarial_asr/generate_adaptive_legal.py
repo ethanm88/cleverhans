@@ -367,7 +367,7 @@ class Attack:
 
         print('worked!!!')
 
-        original_delta = np.copy(sess.run((self.delta_large), feed_dict))
+        original_delta = (sess.run((self.delta_large), feed_dict)).copy()
         maxlen_data_set = sess.run((self.maxlen), feed_dict)
         batch_size = self.batch_size
         rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))

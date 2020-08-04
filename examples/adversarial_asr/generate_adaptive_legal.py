@@ -51,6 +51,7 @@ flags.DEFINE_integer('max_delta', '100', 'the max delta added to the max l infin
 
 flags.DEFINE_integer('num_imperceptible_test', '10', 'number of noise samples to test')
 flags.DEFINE_integer('num_imperceptible_pass', '6', 'number of noise samples to pass')
+flags.DEFINE_integer('maxlen', '146800', 'maxlen - local')
 
 FLAGS = flags.FLAGS
 
@@ -296,13 +297,13 @@ class Attack:
             #self.apply_delta_th = self.clip_freq(place_holder_dict)
             #self.apply_delta_th = (self.clip_freq(self.feed_dict))
             #self.clip_freq(self.feed_dict)
-            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
+            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.maxlen), dtype=np.float32),
                                            name='qq_apply_delta_th')
 
 
 
             #self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
-            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
+            self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
 
 
             self.new_input = self.apply_delta * self.mask + self.input_tf # changed

@@ -253,7 +253,7 @@ class Attack:
             model = params.cls(params)
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
                                            name='qq_delta')
-            self.delta_large_1 = tf.Variable(self.clip_freq(self.feed_dict),name='qq_delta_1')
+            #self.delta_large_1 = tf.Variable(self.clip_freq(self.feed_dict),name='qq_delta_1')
 
             # placeholders
             self.input_tf = tf.placeholder(tf.float32, shape=[batch_size, None], name='qq_input')
@@ -291,7 +291,9 @@ class Attack:
 
 
             #self.apply_delta_th = self.clip_freq(place_holder_dict)
-            self.apply_delta_th = (self.clip_freq(self.feed_dict))
+            #self.apply_delta_th = (self.clip_freq(self.feed_dict))
+            self.apply_delta_th = tf.Variable(self.clip_freq(self.feed_dict),name='qq_delta_1')
+
 
 
             #self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)

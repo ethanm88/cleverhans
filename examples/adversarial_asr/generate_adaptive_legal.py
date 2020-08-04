@@ -55,6 +55,8 @@ flags.DEFINE_integer('num_imperceptible_pass', '6', 'number of noise samples to 
 FLAGS = flags.FLAGS
 
 
+
+
 def ReadFromWav(data, batch_size):
     """
     Returns:
@@ -238,6 +240,7 @@ class Attack:
         self.num_iter_stage1_robust = num_iter_stage1_robust
         self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size
+        self.maxlen_int = maxlen_int
 
         self.is_init = True
         # self.lr_stage1 = lr_stage1

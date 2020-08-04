@@ -517,6 +517,7 @@ class Attack:
             # Actually do the optimization
             sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
+            sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             if i % 10 == 0:
 
                 '''

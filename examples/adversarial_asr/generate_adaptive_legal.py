@@ -284,9 +284,8 @@ class Attack:
             self.alpha = tf.Variable(np.ones((batch_size), dtype=np.float32) * 0.001, name='qq_alpha')
 
             # extract the delta
-            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
-                                           name='qq_apply_delta_th')
-            self.delta = tf.slice(tf.identity(self.apply_delta_th), [0, 0], [batch_size, self.maxlen])
+            #self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),name='qq_apply_delta_th')
+            self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
 
 
 
@@ -368,7 +367,8 @@ class Attack:
 
         print('worked!!!')
 
-        original_delta = np.copy(sess.run((self.delta), feed_dict))
+        original_delta = np.copy(sess.run((self.delta_large), feed_dict)).resize
+        maxlen_data_set = sess.run((self.maxlen), feed_dict)
         batch_size = self.batch_size
         rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
         print(rescale_th)
@@ -385,6 +385,7 @@ class Attack:
         phase = []
 
         for i in range(batch_size):
+            original_delta[i] = original_delta[i].resize(maxlen_data_set)
             clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta[i], center=False))))
             phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
         print(self.maxlen)
@@ -400,8 +401,8 @@ class Attack:
         clipped_final = []
 
         for i in range(batch_size):
-            clipped_final.append(
-                librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False))
+            clipped_final.append(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False))
+            clipped_final[i] = clipped_final[i].resize(FLAGS.max_length_dataset)
 
         clipped_final = np.array([np.array(i) for i in clipped_final])
         return tf.convert_to_tensor(clipped_final)
@@ -516,6 +517,7 @@ class Attack:
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
+            sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
             if i % 10 == 0:
 
@@ -530,7 +532,8 @@ class Attack:
                     (self.apply_delta_th, self.celoss, self.decoded,
                      self.new_input), feed_dict)
                 '''
-                #self.apply_delta_th = self.clip_freq(feed_dict)
+
+
                 loss_th, apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.loss_th, self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)

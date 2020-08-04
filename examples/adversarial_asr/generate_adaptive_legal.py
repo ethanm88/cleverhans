@@ -293,7 +293,7 @@ class Attack:
             #self.apply_delta_th = self.clip_freq(place_holder_dict)
             #self.apply_delta_th = (self.clip_freq(self.feed_dict))
             #self.clip_freq(self.feed_dict)
-            self.apply_delta_th = tf.Variable(np.zeros((batch_size, maxlen_int), dtype=np.float32),
+            self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
                                            name='qq_apply_delta_th')
 
 

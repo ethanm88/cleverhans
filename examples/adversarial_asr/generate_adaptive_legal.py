@@ -138,7 +138,7 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
         #th_batch[i] = np.copy(th_batch[i])
         psd_threshold = np.sqrt(3.0 / 8.) * float(window_size) * np.sqrt(
             np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
-        psd_threshold_batch.append(psd_threshold)
+        psd_threshold_batch.append(10 * np.log10(psd_threshold))
     return psd_threshold_batch
 
 
@@ -405,36 +405,74 @@ class Attack:
         clipped_final = np.array([np.array(i) for i in clipped_final])
         return tf.convert_to_tensor(clipped_final)
 
-    def clip_freq1(self, psd_threshold, delta, batch_size, rescale_th):
+    def clip_freq1(self, feed_dict):
 
-        original_delta = np.copy(delta)
+
+
+        sess = self.sess
+        th_batch = np.copy(sess.run((self.th), feed_dict))
+
+        self.transform = Transform(FLAGS.window_size)
+        psd_input = []
+        for i in range(self.batch_size):
+            psd_input.append(sess.run((self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])), feed_dict))
+            for j in range(th_batch[i]):
+                for k in range(th_batch[i][j]):
+                    psd_input[i][j][k] = min(psd_input[i][j][k], th_batch[i][j][k])
+
+        window_size = FLAGS.window_size
+
+        clip_freq = []
+
+        for i in range(self.batch_size):
+            self.scale = 8. / 3.
+            self.frame_length = int(window_size)
+            self.frame_step = int(window_size // 4)
+            self.window_size = window_size
+
+            win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step)
+            z = self.scale * tf.abs(win / self.window_size)
+            psd = tf.square(z)
+            PSD = tf.pow(10., 9.6) / tf.reshape(self.psd_max_ori[i], [-1, 1, 1]) * psd
+
+
+        original_delta = (sess.run((self.delta_large), feed_dict)).copy()
+        maxlen_data_set = sess.run((self.maxlen), feed_dict)
+        batch_size = self.batch_size
+        rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
+        # print(rescale_th)
+
+        th_batch = np.copy(sess.run((self.th), feed_dict))
+
+        audios = np.copy(sess.run((self.ori_input_tf), feed_dict))
+
+        psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
+
         clipped_freq = []
 
         phase = []
 
+        original_delta_np = []
         for i in range(batch_size):
+            original_delta_np.append(np.resize((original_delta[i]), (maxlen_data_set)))
+            clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta_np[i], center=False))))
+            phase = ((np.angle(librosa.core.stft(original_delta_np[i], center=False))))
 
-            clipped_freq.append(np.transpose(librosa.core.stft(original_delta[i], center=False)))
-            phase = ((np.angle(librosa.core.stft(original_delta[i], center=False))))
-        print(self.maxlen)
-        print(np.shape(clipped_freq))
-        print(np.shape(psd_threshold))
         for i in range(batch_size):
             for j in range(len(psd_threshold[i])):
                 for k in range(len(psd_threshold[i][j])):
-
-                    if psd_threshold[i][j][k] * rescale_th[i] < clipped_freq[i][j][k]:
-                        print(i,j,k)
-
                     clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
+
         clipped_final = []
 
-
         for i in range(batch_size):
-            clipped_final.append(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False))
+            clipped_final.append(
+                np.resize(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False),
+                          FLAGS.max_length_dataset))
+            # clipped_final[i] = clipped_final[i].resize(FLAGS.max_length_dataset)
 
         clipped_final = np.array([np.array(i) for i in clipped_final])
-        return clipped_final
+        return tf.convert_to_tensor(clipped_final)
 
     def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate,
                       masks, masks_freq, num_loop,

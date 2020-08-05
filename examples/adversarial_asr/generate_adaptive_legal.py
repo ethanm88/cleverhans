@@ -136,8 +136,8 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
         psd_max = np.max(z * z)
 
         #th_batch[i] = np.copy(th_batch[i])
-        psd_threshold = (3.0 / 8.) * float(window_size) * np.sqrt(
-            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
+        psd_threshold = np.sqrt(3.0 / 8.) * float(window_size) * np.sqrt(
+            np.multiply(th_batch[i], psd_max) / float(pow(10, 4.8)))
         psd_threshold_batch.append(psd_threshold)
     return psd_threshold_batch
 
@@ -425,14 +425,10 @@ class Attack:
         clip_freq = []
 
         for i in range(self.batch_size):
-            self.scale = 8. / 3.
-            self.frame_length = int(window_size)
-            self.frame_step = int(window_size // 4)
-            self.window_size = window_size
+            scale = 8. / 3.
 
-            win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step)
-            z = self.scale * tf.abs(win / self.window_size)
-            psd = tf.square(z)
+            tf.pow(psd_input[i]*tf.reshape(self.psd_max_ori[i], [-1, 1, 1]), 0.5) * np.sqrt(3/8) * window_size /tf.pow(10., 9.6)
+            clip_freq.append()
             PSD = tf.pow(10., 9.6) / tf.reshape(self.psd_max_ori[i], [-1, 1, 1]) * psd
 
 

@@ -176,11 +176,13 @@ def graphs(audio_stft, perturb_stft, noisy, freqs, th_batch_sorted, ATH_batch, p
 
     axes = plt.gca()
     axes.set_xlim([20, 8000])
-    plt.plot(freqs[sample_num][bin_num], (audio_stft[sample_num][bin_num]), label='Raw Audio')
-    plt.plot(freqs[sample_num][bin_num], (perturb_stft[sample_num][bin_num]), label='Perturb')
+    plt.plot(freqs[sample_num][bin_num], (10*np.log10(audio_stft[sample_num][bin_num])), label='Raw Audio')
+    plt.plot(freqs[sample_num][bin_num], (10* np.log10(perturb_stft[sample_num][bin_num])), label='Perturb')
 
-    plt.plot(freqs[sample_num][bin_num], (psd_threshold[sample_num][bin_num]), label='Masking Threshold')
-    plt.plot(freqs[sample_num][bin_num], (noisy[sample_num][bin_num]), label = 'Defensive Perturbation')
+    plt.plot(freqs[sample_num][bin_num], 10 * np.log10(th_batch_sorted[sample_num][bin_num]), label = 'Masking Threshold')
+
+    #plt.plot(freqs[sample_num][bin_num], (psd_threshold[sample_num][bin_num]), label='Masking Threshold')
+    #plt.plot(freqs[sample_num][bin_num], (noisy[sample_num][bin_num]), label = 'Defensive Perturbation')
 
     #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(audio_stft[sample_num][bin_num]), label='Raw Audio')
     #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(perturb_stft[sample_num][bin_num]), label='Perturb')
@@ -191,7 +193,7 @@ def graphs(audio_stft, perturb_stft, noisy, freqs, th_batch_sorted, ATH_batch, p
 
     #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(noisy[sample_num][bin_num]), label = 'Defensive Perturbation')
     #plt.plot(freqs[sample_num][bin_num], (psd_threshold[sample_num][bin_num]), label='Masking Threshold')
-    #plt.plot(freqs[sample_num][bin_num], 10 * np.log10(th_batch_sorted[sample_num][bin_num]), label = 'Masking Threshold')
+    plt.plot(freqs[sample_num][bin_num], 10 * np.log10(th_batch_sorted[sample_num][bin_num]), label = 'Masking Threshold')
     plt.legend()
     plt.xlabel('Frequency (hz)', fontsize=14)
     plt.ylabel('Sound Pressure Level (dB)', fontsize=14)
@@ -208,8 +210,9 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
         z = abs(win / window_size)
         psd_max = np.max(z * z)
 
-        psd_threshold = np.sqrt(3.0 / 8.) * float(window_size) * np.sqrt(np.multiply(th_batch[i],psd_max)/float(pow(10,9.6)))
-        psd_threshold_batch.append(psd_threshold)
+        psd_threshold = (3.0 / 8.) * float(window_size) * np.sqrt(np.multiply(th_batch[i],psd_max)/float(pow(10,4.8)))
+        psd_threshold_batch.append((th_batch[i]))
+        print(10*np.log10(th_batch[i]))
     return psd_threshold_batch
 
 def getFreqDomain(batch_size, audios, perturb, ATH_batch, sample_rate, th_batch, psd_threshold, num_bins):

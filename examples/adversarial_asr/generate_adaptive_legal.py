@@ -138,9 +138,9 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
         #th_batch[i] = np.copy(th_batch[i])
 
         th_batch_normalized = []
-        for j in range(th_batch[i]):
+        for j in range(len(th_batch[i])):
             th_temp = []
-            for k in range(th_batch[i][j]):
+            for k in range(len(th_batch[i][j])):
                 th_temp.append(10*np.log10(th_batch[i][j][k]))
             th_batch_normalized.append(th_temp)
 

@@ -137,8 +137,8 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
 
         #th_batch[i] = np.copy(th_batch[i])
         psd_threshold = (3.0 / 8.) * float(window_size) * np.sqrt(
-            np.multiply(th_batch[i], psd_max) / float(pow(10, 4.8)))
-        psd_threshold_batch.append(10*np.log10(psd_threshold))
+            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
+        psd_threshold_batch.append((psd_threshold))
     return psd_threshold_batch
 
 
@@ -422,46 +422,26 @@ class Attack:
 
         window_size = FLAGS.window_size
 
-        clip_freq = []
+        clipped_freq = []
 
         for i in range(self.batch_size):
             scale = 8. / 3.
 
-            tf.pow(psd_input[i]*tf.reshape(self.psd_max_ori[i], [-1, 1, 1]), 0.5) * np.sqrt(3/8) * window_size /tf.pow(10., 9.6)
-            clip_freq.append()
-            PSD = tf.pow(10., 9.6) / tf.reshape(self.psd_max_ori[i], [-1, 1, 1]) * psd
+            #tf.pow(psd_input[i]*tf.reshape(self.psd_max_ori[i], [-1, 1, 1])/tf.pow(10., 9.6), 0.5) * (3/8) * window_size
+            clipped_freq.append(tf.pow(psd_input[i]*tf.reshape(self.psd_max_ori[i], [-1, 1, 1])/tf.pow(10., 9.6), 0.5) * (3/8) * window_size)
 
-
-        original_delta = (sess.run((self.delta_large), feed_dict)).copy()
-        maxlen_data_set = sess.run((self.maxlen), feed_dict)
-        batch_size = self.batch_size
-        rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
-        # print(rescale_th)
-
-        th_batch = np.copy(sess.run((self.th), feed_dict))
-
-        audios = np.copy(sess.run((self.ori_input_tf), feed_dict))
-
-        psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
-
-        clipped_freq = []
 
         phase = []
+        original_delta = (sess.run((self.delta_large), feed_dict)).copy()
 
         original_delta_np = []
-        for i in range(batch_size):
-            original_delta_np.append(np.resize((original_delta[i]), (maxlen_data_set)))
-            clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta_np[i], center=False))))
+        for i in range(self.batch_size):
+            original_delta_np.append(np.resize((original_delta[i]), (FLAGS.maxlen_data_set)))
             phase = ((np.angle(librosa.core.stft(original_delta_np[i], center=False))))
-
-        for i in range(batch_size):
-            for j in range(len(psd_threshold[i])):
-                for k in range(len(psd_threshold[i][j])):
-                    clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
 
         clipped_final = []
 
-        for i in range(batch_size):
+        for i in range(self.batch_size):
             clipped_final.append(
                 np.resize(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False),
                           FLAGS.max_length_dataset))

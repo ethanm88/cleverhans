@@ -137,7 +137,7 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
 
         #th_batch[i] = np.copy(th_batch[i])
         psd_threshold = (3.0 / 8.) * float(window_size) * np.sqrt(
-            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
+            np.multiply(10*np.log10(th_batch[i]), psd_max) / float(pow(10, 9.6)))
         psd_threshold_batch.append((psd_threshold))
     return psd_threshold_batch
 
@@ -277,7 +277,7 @@ class Attack:
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * FLAGS.initial_bound,
                                        name='qq_rescale')
 
-            self.rescale_th = tf.Variable(np.ones(batch_size, dtype=np.float32) * 1.0,
+            self.rescale_th = tf.Variable(np.ones(batch_size, dtype=np.float32) * 1.6,
                                           name='qq_resth')
 
 

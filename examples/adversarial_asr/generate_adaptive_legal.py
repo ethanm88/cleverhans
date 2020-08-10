@@ -540,6 +540,8 @@ class Attack:
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
+            apply_delta = sess.run((self.apply_delta), feed_dict)
+            print('1', apply_delta)
             sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
             #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
@@ -557,9 +559,10 @@ class Attack:
                      self.new_input), feed_dict)
                 '''
 
+
                 sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
                 apply_delta = sess.run((self.apply_delta), feed_dict)
-
+                print('2', apply_delta)
                 loss_th, apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.loss_th, self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)

@@ -571,8 +571,9 @@ class Attack:
                 logits_delta = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)
                 thresh = sess.run((self.th)[ii], feed_dict)
                 for k in range(len(logits_delta)):
-                    if logits_delta[k] >thresh[k]:
-                        print(logits_delta[k]-thresh[k])
+                    for l in range(len(logits_delta[k])):
+                        if logits_delta[k][l] >thresh[k][l]:
+                            print(logits_delta[k][l]-thresh[k][l])
                 #loss_th = tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[ii]))
 
                 # print out the prediction each 100 iterations

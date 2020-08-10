@@ -569,7 +569,9 @@ class Attack:
             for ii in range(self.batch_size):
 
                 logits_delta = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)
-                thresh = sess.run((self.th)[ii], feed_dict)
+                thresh = sess.run((self.th[ii]), feed_dict)
+                print(np.shape(thresh))
+                print(np.shape(logits_delta))
                 for k in range(len(logits_delta)):
                     for l in range(len(logits_delta[k])):
                         if logits_delta[k][l] >thresh[k][l]:

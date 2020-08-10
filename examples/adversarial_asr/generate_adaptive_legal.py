@@ -540,8 +540,7 @@ class Attack:
             # losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
 
             # Actually do the optimization
-            apply_delta = sess.run((self.apply_delta), feed_dict)
-            print('1', apply_delta)
+
             sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
             #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
@@ -558,11 +557,18 @@ class Attack:
                     (self.apply_delta_th, self.celoss, self.decoded,
                      self.new_input), feed_dict)
                 '''
-
+                apply_delta_1 = sess.run((self.apply_delta), feed_dict)
 
                 sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
-                apply_delta = sess.run((self.apply_delta), feed_dict)
-                print('2', apply_delta)
+                apply_delta_2 = sess.run((self.apply_delta), feed_dict)
+
+                '''
+                for k in range(self.batch_size):
+                    for j in range(apply_delta_1[k]):
+                        if(apply_delta_1[k][j] != apply_delta[k][j]):
+                '''
+
+
                 loss_th, apply_delta, d, cl, predictions, new_input = sess.run(
                     (self.loss_th, self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
@@ -573,6 +579,15 @@ class Attack:
 
                 logits_delta = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)[ii]
                 thresh = sess.run((self.th[ii]), feed_dict)
+
+                import matplotlib.pyplot as plt
+
+                plt.plot(logits_delta[5][10], label= 'logits')
+                plt.plot(thresh[5][10], label = 'threshold')
+
+                plt.legend()
+                plt.show()
+
                 print(np.shape(thresh))
                 print(np.shape(logits_delta))
                 counter_1 = 0

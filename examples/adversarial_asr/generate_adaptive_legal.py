@@ -461,6 +461,17 @@ class Attack:
         clipped_final = np.array([np.array(i) for i in clipped_final])
         return tf.convert_to_tensor(clipped_final)
 
+    def unclip(self, clipped, audios, window_size):
+        win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios, center=False)
+        z = abs(win / window_size)
+        psd_max = np.max(z * z)
+
+        psd = np.square(8.0 / 3. * (clipped / 2048.))
+
+        unclipped = np.power(10, 9.6) / psd_max * psd
+
+        return unclipped
+
     def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate,
                       masks, masks_freq, num_loop,
                       data, lr_stage2, lr_stage1):
@@ -588,7 +599,7 @@ class Attack:
                     pickle.dump(graph_data, output)
                     output.close()
 
-                    graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048)}
+                    graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048.), 'unclipped': self.unclip(np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))),sess.run((self.ori_input_tf), feed_dict), 2048.)}
 
                     file_name = 'graph_data_2.pkl'
                     output = open(file_name, 'wb')

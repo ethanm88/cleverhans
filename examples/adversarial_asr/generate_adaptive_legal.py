@@ -581,11 +581,15 @@ class Attack:
                 thresh = sess.run((self.th[ii]), feed_dict)
 
                 import matplotlib.pyplot as plt
+                %matplotlib notebook
 
                 plt.plot(logits_delta[5][10], label= 'logits')
-                plt.plot(thresh[5][10], label = 'threshold')
 
+                %matplotlib notebook
+                plt.plot(thresh[5][10], label = 'threshold')
+                %matplotlib notebook
                 plt.legend()
+                %matplotlib notebook
                 plt.show()
 
                 print(np.shape(thresh))

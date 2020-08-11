@@ -588,7 +588,7 @@ class Attack:
                     pickle.dump(graph_data, output)
                     output.close()
 
-                    graph_data_2 = {'apply_delta': apply_delta[ii, :], 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048)}
+                    graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048)}
 
                     file_name = 'graph_data_2.pkl'
                     output = open(file_name, 'wb')

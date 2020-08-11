@@ -591,12 +591,13 @@ class Attack:
 
 
 
+
                 if i == 1:
-                    logits_delta = \
-                    sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)[ii]
+                    logits_delta = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)[ii]
                     thresh = sess.run((self.th[ii]), feed_dict)
 
                     graph_data = {'logits': logits_delta, 'thresh': thresh}
+
 
                     file_name = 'graph_data.pkl'
                     output = open(file_name, 'wb')
@@ -618,7 +619,7 @@ class Attack:
                             if logits_delta[k][l] >thresh[k][l]:
                                 counter_1+= 1
                     print(counter_1)
-                #loss_th = tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[ii]))
+                    #loss_th = tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[ii]))
 
                 # print out the prediction each 100 iterations
 

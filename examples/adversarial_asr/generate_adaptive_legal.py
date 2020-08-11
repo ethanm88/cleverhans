@@ -337,7 +337,7 @@ class Attack:
         self.loss_th_list = []
         self.transform = Transform(FLAGS.window_size)
         for i in range(self.batch_size):
-            logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
+            num, logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
             loss_th = tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[i]))
             loss_th = tf.expand_dims(loss_th, dim=0)
             self.loss_th_list.append(loss_th)
@@ -594,7 +594,7 @@ class Attack:
 
 
                 if i == 1:
-                    logits_delta = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)
+                    logits_delta, num = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)
                     thresh = sess.run((self.th[ii]), feed_dict)
 
                     graph_data = {'logits': np.transpose(np.abs(logits_delta)), 'thresh': thresh}

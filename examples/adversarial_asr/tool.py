@@ -110,4 +110,4 @@ class Transform(object):
         print('new_psd', psd)
         PSD = psd
         #tf.pow(10., 9.6) / tf.reshape(psd_max_ori, [-1, 1, 1]) * psd
-        return win
+        return win, PSD

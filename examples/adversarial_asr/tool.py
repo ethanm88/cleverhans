@@ -108,5 +108,6 @@ class Transform(object):
         z = self.scale *tf.abs(win / self.window_size)
         psd = tf.square(z)
         print('new_psd', psd)
-        PSD = tf.pow(10., 9.6) / tf.reshape(psd_max_ori, [-1, 1, 1]) * psd
+        PSD = psd
+        #tf.pow(10., 9.6) / tf.reshape(psd_max_ori, [-1, 1, 1]) * psd
         return PSD

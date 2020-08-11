@@ -581,20 +581,23 @@ class Attack:
                 '''
 
 
-                loss_th, apply_delta, d, cl, predictions, new_input = sess.run(
-                    (self.loss_th, self.apply_delta, self.delta, self.celoss, self.decoded,
+                apply_delta, d, cl, predictions, new_input = sess.run(
+                    ( self.apply_delta, self.delta, self.celoss, self.decoded,
                      self.new_input), feed_dict)
 
-                print("Loss th: ", loss_th)
+                #print("Loss th: ", loss_th)
 
             for ii in range(self.batch_size):
 
-                logits_delta = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)[ii]
-                thresh = sess.run((self.th[ii]), feed_dict)
-
-                graph_data = {'logits': logits_delta, 'thresh': thresh}
+                
 
                 if i == 1:
+                    logits_delta = \
+                    sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)[ii]
+                    thresh = sess.run((self.th[ii]), feed_dict)
+
+                    graph_data = {'logits': logits_delta, 'thresh': thresh}
+
                     file_name = 'graph_data.pkl'
                     output = open(file_name, 'wb')
                     pickle.dump(graph_data, output)

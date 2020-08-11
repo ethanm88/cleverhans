@@ -589,7 +589,7 @@ class Attack:
 
             for ii in range(self.batch_size):
 
-                
+
 
                 if i == 1:
                     logits_delta = \

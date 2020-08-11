@@ -610,14 +610,14 @@ class Attack:
                     pickle.dump(graph_data_2, output)
                     output.close()
 
-                print(np.shape(thresh))
-                print(np.shape(logits_delta))
-                counter_1 = 0
-                for k in range(len(logits_delta)):
-                    for l in range(len(logits_delta[k])):
-                        if logits_delta[k][l] >thresh[k][l]:
-                            counter_1+= 1
-                print(counter_1)
+                    print(np.shape(thresh))
+                    print(np.shape(logits_delta))
+                    counter_1 = 0
+                    for k in range(len(logits_delta)):
+                        for l in range(len(logits_delta[k])):
+                            if logits_delta[k][l] >thresh[k][l]:
+                                counter_1+= 1
+                    print(counter_1)
                 #loss_th = tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[ii]))
 
                 # print out the prediction each 100 iterations

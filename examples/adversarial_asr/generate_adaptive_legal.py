@@ -462,6 +462,7 @@ class Attack:
         return tf.convert_to_tensor(clipped_final)
 
     def unclip(self, clipped, audios, window_size):
+        print(np.shape(audios))
         win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios, center=False)
         z = abs(win / window_size)
         psd_max = np.max(z * z)

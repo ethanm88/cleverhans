@@ -588,6 +588,13 @@ class Attack:
                     pickle.dump(graph_data, output)
                     output.close()
 
+                    graph_data_2 = {'apply_delta': apply_delta[ii, :], 'psd_thresh': thresholdPSD(sess.run((self.batch_size), feed_dict), sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048)}
+
+                    file_name = 'graph_data.pkl'
+                    output = open(file_name, 'wb')
+                    pickle.dump(graph_data, output)
+                    output.close()
+
                 print(np.shape(thresh))
                 print(np.shape(logits_delta))
                 counter_1 = 0

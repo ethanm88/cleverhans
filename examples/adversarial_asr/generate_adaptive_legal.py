@@ -582,10 +582,11 @@ class Attack:
 
                 graph_data = {'logits': logits_delta, 'thresh': thresh}
 
-                file_name = 'graph_data.pkl'
-                output = open(file_name, 'wb')
-                pickle.dump(graph_data, output)
-                output.close()
+                if i == 1:
+                    file_name = 'graph_data.pkl'
+                    output = open(file_name, 'wb')
+                    pickle.dump(graph_data, output)
+                    output.close()
 
                 print(np.shape(thresh))
                 print(np.shape(logits_delta))

@@ -541,7 +541,7 @@ class Attack:
 
             # Actually do the optimization
 
-            sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+            #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
             #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             if i % 10 == 0:
@@ -559,7 +559,7 @@ class Attack:
                 '''
                 apply_delta_1 = sess.run((self.apply_delta), feed_dict)
 
-                sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+                #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
                 apply_delta_2 = sess.run((self.apply_delta), feed_dict)
 
                 '''

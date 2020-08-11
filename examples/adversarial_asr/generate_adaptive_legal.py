@@ -286,7 +286,7 @@ class Attack:
             self.rescale = tf.Variable(np.ones((batch_size, 1), dtype=np.float32) * FLAGS.initial_bound,
                                        name='qq_rescale')
 
-            self.rescale_th = tf.Variable(np.ones(batch_size, dtype=np.float32) * 1.6,
+            self.rescale_th = tf.Variable(np.ones(batch_size, dtype=np.float32) * 1.0,
                                           name='qq_resth')
 
 
@@ -541,9 +541,9 @@ class Attack:
 
             # Actually do the optimization
 
-            #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+            sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             sess.run(self.train1, feed_dict)
-            #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+            sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
             if i % 10 == 0:
 
                 '''
@@ -559,7 +559,7 @@ class Attack:
                 '''
                 apply_delta_1 = sess.run((self.apply_delta), feed_dict)
 
-                #sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
+                sess.run(tf.assign(self.delta_large, self.clip_freq(feed_dict)))
                 apply_delta_2 = sess.run((self.apply_delta), feed_dict)
 
                 '''

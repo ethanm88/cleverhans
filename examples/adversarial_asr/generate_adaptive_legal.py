@@ -580,17 +580,12 @@ class Attack:
                 logits_delta = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)[ii]
                 thresh = sess.run((self.th[ii]), feed_dict)
 
-                import matplotlib.pyplot as plt
-                %matplotlib notebook
+                graph_data = {'logits': logits_delta, 'thresh': thresh}
 
-                plt.plot(logits_delta[5][10], label= 'logits')
-
-                %matplotlib notebook
-                plt.plot(thresh[5][10], label = 'threshold')
-                %matplotlib notebook
-                plt.legend()
-                %matplotlib notebook
-                plt.show()
+                file_name = 'graph_data.pkl'
+                output = open(file_name, 'wb')
+                pickle.dump(graph_data, output)
+                output.close()
 
                 print(np.shape(thresh))
                 print(np.shape(logits_delta))

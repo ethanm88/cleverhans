@@ -127,13 +127,13 @@ def getPhase(radii, angles):
     return radii * np.exp(1j * angles)
 
 
-def thresholdPSD(batch_size, th_batch, audios, window_size):
+def thresholdPSD(batch_size, th_batch, audios, window_size, psd_max):
     psd_threshold_batch = []
     for i in range(batch_size):
         #th_batch[i] = np.copy(th_batch[i]).resize(len(audios[i]))
         win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
         z = abs(win / window_size)
-        psd_max = np.max(z * z)
+        psd_max_1 = np.max(z * z)
 
         #th_batch[i] = np.copy(th_batch[i])
 
@@ -385,7 +385,7 @@ class Attack:
         audios = np.copy(sess.run((self.ori_input_tf), feed_dict))
 
 
-        psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
+        psd_threshold = thresholdPSD(batch_size, th_batch, audios, 2048, sess.run((self.psd_max_ori), feed_dict)[0])
 
         clipped_freq = []
 
@@ -600,7 +600,7 @@ class Attack:
                     pickle.dump(graph_data, output)
                     output.close()
 
-                    graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048.), 'unclipped': self.unclip(np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), sess.run((self.ori_input_tf)[ii], feed_dict), 2048.)}
+                    graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048., sess.run((self.psd_max_ori), feed_dict)[0]), 'unclipped': self.unclip(np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), sess.run((self.ori_input_tf)[ii], feed_dict), 2048.)}
 
                     file_name = 'graph_data_2.pkl'
                     output = open(file_name, 'wb')

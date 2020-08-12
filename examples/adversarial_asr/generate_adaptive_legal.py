@@ -605,7 +605,9 @@ class Attack:
                     pickle.dump(graph_data, output)
                     output.close()
 
-                    graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048., sess.run((self.psd_max_ori), feed_dict)[0]), 'unclipped': self.unclip(np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), sess.run((self.ori_input_tf)[ii], feed_dict), 2048.)}
+                    apply_delta_cut = sess.run((self.apply_delta[ii, :]), feed_dict)
+
+                    graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta_cut, center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048., sess.run((self.psd_max_ori), feed_dict)[0]), 'unclipped': self.unclip(np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), sess.run((self.ori_input_tf)[ii], feed_dict), 2048.)}
 
                     file_name = 'graph_data_2.pkl'
                     output = open(file_name, 'wb')

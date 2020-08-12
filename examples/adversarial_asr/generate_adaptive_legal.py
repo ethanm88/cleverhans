@@ -470,7 +470,7 @@ class Attack:
         psd = np.square(8.0 / 3. * (clipped / 2048.))
 
         #unclipped = psd
-        unclipped = 8.0 / 3. * (clipped / 2048.)
+        unclipped = (clipped)
         #np.power(10, 9.6) / psd_max * psd
 
         return unclipped

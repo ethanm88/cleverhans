@@ -612,6 +612,7 @@ class Attack:
                     pickle.dump(graph_data_2, output)
                     output.close()
 
+                    '''
                     print(np.shape(thresh))
                     print(np.shape(logits_delta))
                     counter_1 = 0
@@ -621,6 +622,7 @@ class Attack:
                                 counter_1+= 1
                     print(counter_1)
                     #loss_th = tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[ii]))
+                    '''
 
                 # print out the prediction each 100 iterations
 

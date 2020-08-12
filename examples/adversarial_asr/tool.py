@@ -104,7 +104,7 @@ class Transform(object):
         self.window_size = window_size
     
     def __call__(self, x, psd_max_ori):
-        win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step)
+        win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step, pad_end=False)
         z = self.scale *tf.abs(win / self.window_size)
         psd = tf.square(z)
         print('new_psd', psd)

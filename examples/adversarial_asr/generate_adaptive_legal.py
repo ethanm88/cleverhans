@@ -610,6 +610,7 @@ class Attack:
                     print('logits', np.shape(logits_delta))
                     print('apply_delta', np.shape(apply_delta_cut))
                     for n in range(20):
+                        if(logits_delta[i] != apply_delta_cut[i])
                         print(logits_delta[i], apply_delta_cut[i])
 
 

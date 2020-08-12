@@ -609,6 +609,8 @@ class Attack:
 
                     print('logits', np.shape(logits_delta))
                     print('apply_delta', np.shape(apply_delta_cut))
+                    for n in range(20):
+                        print(logits_delta[i], apply_delta_cut[i])
 
 
                     graph_data_2 = {'apply_delta': np.transpose(np.abs(librosa.core.stft(apply_delta_cut, center=False))), 'psd_thresh': thresholdPSD(self.batch_size, sess.run((self.th), feed_dict), sess.run((self.ori_input_tf), feed_dict), 2048., sess.run((self.psd_max_ori), feed_dict)[0]), 'unclipped': self.unclip(np.transpose(np.abs(librosa.core.stft(apply_delta[ii, :], center=False))), sess.run((self.ori_input_tf)[ii], feed_dict), 2048.)}

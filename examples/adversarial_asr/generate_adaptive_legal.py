@@ -598,7 +598,7 @@ class Attack:
                     logits_delta,num = sess.run((self.transform((self.apply_delta[ii, :]), (self.psd_max_ori)[ii])), feed_dict)
                     thresh = sess.run((self.th[ii]), feed_dict)
 
-                    graph_data = {'logits': logits_delta, 'thresh': thresh}
+                    graph_data = {'logits': np.transpose(np.abs(logits_delta)), 'thresh': thresh}
                     #np.transpose(np.abs(librosa.core.stft(logits_delta, center=False)))
 
                     file_name = 'graph_data.pkl'

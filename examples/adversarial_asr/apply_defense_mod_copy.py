@@ -1,9 +1,5 @@
 '''
-New File:
-- save_audios method called during execution of the evaluate_defensive_mod.py
-- Generates the input for Lingvo Model during testing
-- Must first generate defensive peturbation files using write_defensive_delta.py
-
+To be deleted - check other file
 '''
 
 import librosa as librosa

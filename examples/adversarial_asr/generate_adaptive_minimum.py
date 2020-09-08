@@ -1,7 +1,7 @@
 '''
 Original:
 - generates imperceptible untargeted adaptive adversarial examples
-- Ethan: need new file that generates normal auntargeted adverarial examples
+- Ethan: need new file that generates normal untargeted adverarial examples
 - Ethan: add the fixed method for masking threshold
 
 '''

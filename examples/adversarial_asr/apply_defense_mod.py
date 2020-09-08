@@ -1,5 +1,8 @@
 '''
-To be deleted
+New File:
+- save_audios method called during execution of the evaluate_defensive_mod.py
+- Generates the input for Lingvo Model during testing
+- Must first generate defensive peturbation files using write_defensive_delta.py
 
 '''
 import librosa as librosa
@@ -353,7 +356,7 @@ def save_audios(factor, index_loop):
             print('Type: Ours')
 
             '''
-            Read random noisy sample:
+            Read random noisy defensive perturbation sample for testing:
             You must run write_defensive_delta.py first (you can stop execution prematurely and edit the code below
             based on the testing batch)
             '''
@@ -372,61 +375,6 @@ def save_audios(factor, index_loop):
                 benign_time_series = noisy_sample
             return adv_time_series, benign_time_series
 
-            '''
-
-            psd_threshold, phase = initial_audio(batch_size, th_batch, audios)
-            noisy_audios = apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw_audio, phase)
-
-            for k in range(batch_size):
-                if FLAGS.adv:
-                    adv_time_series.append(noisy_audios[k])
-                else:
-                    benign_time_series.append(noisy_audios[k])
-
-
-            audio_stft = []
-            ori = 0
-            final = 0
-            for i in range(batch_size):
-                audio_stft.append(numpy.transpose(abs(librosa.core.stft(audios[i], center=False))))
-                ori = ((librosa.core.stft(audios[i], center=False)))
-            noisy = applyDefense(batch_size, psd_threshold, audio_stft, factor)
-
-            for k in range(batch_size):
-                phase = []
-                phase = ((numpy.angle(librosa.core.stft(audios[k], center=False))))
-                time_series = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]),phase)),center=False)
-                time_series = numpy.array(time_series)
-                time_series.resize(lengths[k], refcheck=False)
-
-                time_series1 = raw_audio[k]
-                time_series1 = time_series1[: lengths[k]]
-                time_series1 = numpy.array(time_series1)
-                print(k)
-                print(len(time_series1), " ", len(time_series))
-
-
-                #final_time_series = time_series + time_series1
-                final_time_series = time_series1
-                print('size', numpy.array(final_time_series).shape)
-
-                # added
-                file_name = './noisy_data/defensive_' + str(0) + '.pkl'
-                pkl_file = open(file_name, 'rb')
-                all_noisy = pickle.load(pkl_file)
-                pkl_file.close()
-                key = str(2) + '_' + str(int(0)) + '_' + str(0)
-                first = (all_noisy[key])
-
-                print('size2', numpy.array(first).shape)
-
-
-                #final_time_series = first
-                if x == 0:
-                    adv_time_series.append(final_time_series)
-                else:
-                    benign_time_series.append(final_time_series)
-                '''
 
     return adv_time_series, benign_time_series
 

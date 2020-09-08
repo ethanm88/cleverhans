@@ -1,3 +1,12 @@
+'''
+New File:
+- Run with desired parameters to test adversarial examples
+    - factor: set log k
+    - adv: adversarial or clean example
+    - revert: test for adversarial reversion
+    - type_defense: type of defense applied (0-2) - see apply_defense_mod.py
+'''
+
 import tensorflow as tf
 from lingvo import model_imports
 from lingvo import model_registry
@@ -8,8 +17,7 @@ from tool import create_features, create_inputs
 import time
 from lingvo.core import cluster_factory
 from absl import flags
-#import apply_defense_mod
-import  apply_defense_mod_copy
+import apply_defense_mod
 
 
 from absl import app
@@ -38,7 +46,7 @@ def Read_input(data, batch_size, num_loop): # 0 = adv 1 = benign
         trans: an array includes the targeted transcriptions (batch_size,)
         masks_freq: a numpy array to mask out the padding features in frequency domain
     """
-    adv_time_series, benign_time_series = apply_defense_mod_copy.save_audios(FLAGS.factor, num_loop)
+    adv_time_series, benign_time_series = apply_defense_mod.save_audios(FLAGS.factor, num_loop)
     audios = []
     lengths = []
 

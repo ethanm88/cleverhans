@@ -1,3 +1,6 @@
+'''
+delete
+'''
 import pickle
 import pprint
 

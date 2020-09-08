@@ -1,3 +1,6 @@
+'''
+delete
+'''
 import tensorflow as tf
 from lingvo import model_imports
 from lingvo import model_registry

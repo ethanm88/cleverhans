@@ -1,3 +1,9 @@
+'''
+New File:
+- Graphs CE Loss, Threshold Loss, and values of the adaptive factor from data stored in text files
+- Must run an adversarial example generation method to generate data
+- Ethan: check text files everywhere
+'''
 import matplotlib.pyplot as plt
 import numpy as np
 

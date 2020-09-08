@@ -142,9 +142,13 @@ def main(argv):
                 wer_adv = 0
                 wer_benign = 0
                 print("Factor: " + str(FLAGS.factor))
-                num_loops = 1
+
+
+                '''
+                Calculate WER for each audio sample in batch
+                '''
                 for l in range(int(num_loops)):
-                    #l = l+1
+
                     data_sub = data[:, l * batch_size:(l + 1) * batch_size]
                     audios_np, sample_rate, tgt_np, mask_freq = Read_input(data_sub, batch_size, l)
                     feed_dict = {input_tf: audios_np,

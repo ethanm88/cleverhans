@@ -1,3 +1,10 @@
+'''
+Original File:
+- Generates Imperceptible Targeted Adversarial Examples according to appraoch developed by Qin et al.
+- Serves as a template - unmodified from previous source code
+- copy code from master
+
+'''
 import tensorflow as tf
 from lingvo import model_imports
 from lingvo import model_registry

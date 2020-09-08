@@ -1,6 +1,14 @@
+'''
+New File:
+- IMPORTANT: For testing use generate_adaptive_minimum.py or generate_adaptive_legal.py instead of this file
+- Generates Targeted Adaptive Adversarial Examples in Three Stages
+- Currently reuses randomness during testing phase (must run write_defensive_delta.py with
+  appropriate arguments to generate enough randomness of defensive perturbation for all iterations)
+
+'''
+
 import pickle
 import pprint
-
 import tensorflow as tf
 import os
 from lingvo import model_imports
@@ -117,9 +125,6 @@ def ReadFromWav(data, batch_size):
     return raw_audio, audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
 
 
-def getPhase(radii, angles):
-    return radii * np.exp(1j * angles)
-
 
 def thresholdPSD(batch_size, th_batch, audios, window_size):
     psd_threshold_batch = []
@@ -134,21 +139,6 @@ def thresholdPSD(batch_size, th_batch, audios, window_size):
     return psd_threshold_batch
 
 
-def normalize_input(all_time_series, batch_size, lengths):
-    for i in range(batch_size):
-        if max(all_time_series[i]) < 1:
-            all_time_series[i] = all_time_series[i] * 32768
-        else:
-            all_time_series[i] = all_time_series[i]
-
-    max_length = max(lengths)
-    audios_np = np.zeros([batch_size, max_length])
-    for i in range(batch_size):
-        audio_float = all_time_series[i].astype(float)
-        audios_np[i, :lengths[i]] = audio_float
-    return audios_np
-
-
 def initial_audio(batch_size, th_batch, audios):
     # calculate normalized threshold
     psd_threshold = thresholdPSD(batch_size, th_batch, audios, window_size=2048)
@@ -158,45 +148,6 @@ def initial_audio(batch_size, th_batch, audios):
     for i in range(batch_size):
         phase = ((np.angle(librosa.core.stft(audios[i], center=False))))
     return psd_threshold, phase
-
-
-def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw_audio, phase):
-    noisy = []
-    # noisy = [[[0]*1025]*305]*batch_size
-    #  for i in range(batch_size):
-
-    # generate defensive perturbation
-    factor = float(factor)
-    actual_fac = float(pow(10.0, factor))
-    for i in range(batch_size):
-        temp1 = []
-        for j in range(len(psd_threshold[i])):
-            temp2 = []
-            for k in range(len(psd_threshold[i][j])):
-                sd = psd_threshold[i][j][k] * actual_fac  # changed
-                mean = psd_threshold[i][j][k] * actual_fac * 3
-                # temp2.append(min(max(np.random.normal(mean, sd, 1)[0], 0), th_batch[i][j][k])) max was th
-                temp2.append((max(np.random.normal(mean, sd, 1)[0], 0)))
-
-            temp1.append(temp2)
-        noisy.append(temp1)
-
-    # add defensive perturbation to raw audio
-    all_time_series = []
-    for k in range(batch_size):
-        time_series_noisy = librosa.core.istft(np.array(getPhase(np.transpose(noisy[k]), phase)), center=False)
-        # time_series = time_series[: lengths[k]]
-        time_series_noisy = np.array(time_series_noisy)
-        time_series_noisy.resize(lengths[k], refcheck=False)
-
-        time_series_original = raw_audio[k]
-        time_series_original = time_series_original[: lengths[k]]
-        time_series_original = np.array(time_series_original)
-
-        final_time_series = np.array(time_series_original + time_series_noisy)
-        all_time_series.append(final_time_series.tolist())
-    all_time_series = np.array([np.array(i) for i in all_time_series])
-    return normalize_input(all_time_series, batch_size, lengths)
 
 
 def read_noisy(num_loop, batch_size, num_iter_batch):  # only works one adv examples at a time - modify

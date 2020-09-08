@@ -1,3 +1,8 @@
+'''
+Original File:
+- Generates room reverb files for robustness testing
+
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile

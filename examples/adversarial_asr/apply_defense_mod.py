@@ -1,3 +1,10 @@
+'''
+New File:
+- save_audios method called during execution of the evaluate_defensive_mod.py
+- Generates the input for Lingvo Model during testing
+- Must first generate defensive peturbation files using write_defensive_delta.py
+
+'''
 import librosa as librosa
 # import tensorflow as tf
 # from lingvo import model_imports
@@ -165,13 +172,6 @@ def getFreqDomain(batch_size, audios, ATH_batch, sample_rate, th_batch, psd_thre
 
     return audio_stft, noisy, freqs, th_batch, ATH_batch, psd_threshold
 
-
-'''
-def FeedForward (audios, sample_rate, mask_freq): #not finished
-    pass_in = tf.clip_by_value(audios, -2 ** 15, 2 ** 15 - 1)
-    features = create_features(pass_in, sample_rate, mask_freq) #I think we need to modify create_features method
-    inputs = create_inputs(model, features, self.tgt_tf, self.batch_size, self.mask_freq)
-'''
 
 
 def getPhase(radii, angles):

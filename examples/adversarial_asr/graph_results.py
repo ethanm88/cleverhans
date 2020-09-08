@@ -1,3 +1,7 @@
+'''
+Delete/change slightly
+'''
+
 import matplotlib.pyplot as plt
 
 def readfromfile(file_name, size):

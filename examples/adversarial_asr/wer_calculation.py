@@ -1,3 +1,7 @@
+'''
+File Pulled from Repo:
+- used to generate WER in generate_adaptive_adv.py, generate_adaptive_minimum.py, and generate_adaptive_legal.py
+'''
 import sys
 import numpy
 

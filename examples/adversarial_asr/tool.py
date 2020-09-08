@@ -1,3 +1,8 @@
+'''
+Original (modified) File:
+- contains many important functionalities such as feature creation and tools to calculate th_loss
+- should I modify???
+'''
 from tensorflow.python import pywrap_tensorflow
 import numpy as np
 import tensorflow as tf

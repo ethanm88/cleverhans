@@ -1,3 +1,12 @@
+'''
+Original File:
+- generates defensive perturbations used during adaptive attack generation and testing (100 per pkl file)
+- IMPORTANT: must make new directory "./noisy_data" within current directory
+- change the arguments to change the log of the adaptive factor and the number of iterations to be store
+- Ethan: change number of iters/clean up, have items be an argument
+- Note: its fine to reuse audio because its done during generation
+'''
+
 import librosa as librosa
 # import tensorflow as tf
 # from lingvo import model_imports

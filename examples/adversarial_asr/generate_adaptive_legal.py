@@ -1,3 +1,8 @@
+'''
+Original:
+- generates an untargeted adaptive adversarial examples under a perturbation limit
+'''
+
 import pickle
 
 import matplotlib.pyplot as plt

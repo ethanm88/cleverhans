@@ -17,7 +17,7 @@ import wer_calculation
 import numpy as np
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
-from tool import Transform, create_features, create_inputs
+from tool import Transform, create_features, create_inputs, get_clipped_sample
 import time
 from lingvo.core import cluster_factory
 from absl import flags
@@ -135,24 +135,13 @@ def getPhase(radii, angles):
 def thresholdPSD(batch_size, th_batch, audios, window_size, psd_max):
     psd_threshold_batch = []
     for i in range(batch_size):
-        #th_batch[i] = np.copy(th_batch[i]).resize(len(audios[i]))
         win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
         z = abs(win / window_size)
-        psd_max_1 = np.max(z * z)
+        psd_max = np.max(z * z)
 
-        #th_batch[i] = np.copy(th_batch[i])
-
-        th_batch_normalized = []
-        for j in range(len(th_batch[i])):
-            th_temp = []
-            for k in range(len(th_batch[i][j])):
-                th_temp.append((th_batch[i][j][k]))
-            th_batch_normalized.append(th_temp)
-
-
-        psd_threshold = (3.0 / 8.) * float(window_size) * np.sqrt(
-            np.multiply(th_batch_normalized, psd_max) / float(pow(10, 9.6)))
-        psd_threshold_batch.append((psd_threshold))
+        psd_threshold = 3.0 / 8. * float(window_size) * np.sqrt(
+            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
+        psd_threshold_batch.append(psd_threshold)
     return psd_threshold_batch
 
 
@@ -301,26 +290,17 @@ class Attack:
             #self.apply_delta_th = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),name='qq_apply_delta_th')
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])
 
+            #
+            self.transform = Transform(FLAGS.window_size)
+            for i in range(self.batch_size):
+                logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
 
 
 
-
-
-            #self.apply_delta_th = tf.Variable(tf.identity(self.delta))
-
-
-            #self.apply_delta_th = self.clip_freq(place_holder_dict)
-            #self.apply_delta_th = (self.clip_freq(self.feed_dict))
-            #self.clip_freq(self.feed_dict)
-
-
-
-
-            #self.apply_delta = tf.clip_by_value(self.apply_delta_th, -self.rescale, self.rescale)
             self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale)
 
 
-            self.new_input = self.apply_delta * self.mask + self.input_tf # changed
+            self.new_input =  get_clipped_sample(self.psd_max_ori, self.th, self.apply_delta ,self.batch_size, FLAGS.window_size)* self.mask + self.input_tf # changed
 
             self.actual_input = self.apply_delta * self.mask + self.ori_input_tf
 
@@ -342,7 +322,7 @@ class Attack:
         self.loss_th_list = []
         self.transform = Transform(FLAGS.window_size)
         for i in range(self.batch_size):
-            num, logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
+            logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
             loss_th = tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[i]))
             loss_th = tf.expand_dims(loss_th, dim=0)
             self.loss_th_list.append(loss_th)
@@ -360,125 +340,6 @@ class Attack:
         self.train22 = self.optimizer2.apply_gradients([(grad22, var22)])
         self.train2 = tf.group(self.train21, self.train22)
 
-    def clip_freq(self, feed_dict):
-        #print(feed_dict)
-        if self.is_init == True:
-            print("hello")
-            return tf.identity(self.delta)
-        sess = self.sess
-        '''
-        #, psd_threshold, delta, batch_size, rescale_th
-        original_delta = np.copy((self.delta).numpy())
-        batch_size = self.batch_size
-        rescale_th = np.copy((self.rescale_th).numpy())
-
-        th_batch = self.th.numpy()
-
-        audios = (self.audios).numpy()
-        
-        '''
-
-
-        original_delta = (sess.run((self.delta_large), feed_dict)).copy()
-        maxlen_data_set = sess.run((self.maxlen), feed_dict)
-        batch_size = self.batch_size
-        rescale_th = np.copy(sess.run((self.rescale_th), feed_dict))
-        #print(rescale_th)
-
-        th_batch = np.copy(sess.run((self.th), feed_dict))
-
-        audios = np.copy(sess.run((self.ori_input_tf), feed_dict))
-
-
-        psd_threshold = thresholdPSD(batch_size, th_batch, audios, 2048, sess.run((self.psd_max_ori), feed_dict)[0])
-
-        clipped_freq = []
-
-        phase = []
-
-
-        original_delta_np = []
-        for i in range(batch_size):
-            original_delta_np.append(np.resize((original_delta[i]),(maxlen_data_set)))
-            clipped_freq.append(np.transpose(np.abs(librosa.core.stft(original_delta_np[i], center=False))))
-            phase = ((np.angle(librosa.core.stft(original_delta_np[i], center=False))))
-
-
-        for i in range(batch_size):
-            for j in range(len(psd_threshold[i])):
-                for k in range(len(psd_threshold[i][j])):
-                    clipped_freq[i][j][k] = min(clipped_freq[i][j][k], psd_threshold[i][j][k] * rescale_th[i])
-                    #clipped_freq[i][j][k] = psd_threshold[i][j][k] * rescale_th[i]
-
-
-
-        clipped_final = []
-
-        for i in range(batch_size):
-            clipped_final.append(np.resize(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False), FLAGS.max_length_dataset))
-            #clipped_final[i] = clipped_final[i].resize(FLAGS.max_length_dataset)
-
-        clipped_final = np.array([np.array(i) for i in clipped_final])
-        return tf.convert_to_tensor(clipped_final)
-
-    def clip_freq1(self, feed_dict):
-
-
-
-        sess = self.sess
-        th_batch = np.copy(sess.run((self.th), feed_dict))
-
-        self.transform = Transform(FLAGS.window_size)
-        psd_input = []
-        for i in range(self.batch_size):
-            psd_input.append(sess.run((self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])), feed_dict))
-            for j in range(th_batch[i]):
-                for k in range(th_batch[i][j]):
-                    psd_input[i][j][k] = min(psd_input[i][j][k], th_batch[i][j][k])
-
-        window_size = FLAGS.window_size
-
-        clipped_freq = []
-
-        for i in range(self.batch_size):
-            scale = 8. / 3.
-
-            #tf.pow(psd_input[i]*tf.reshape(self.psd_max_ori[i], [-1, 1, 1])/tf.pow(10., 9.6), 0.5) * (3/8) * window_size
-            clipped_freq.append(tf.pow(psd_input[i]*tf.reshape(self.psd_max_ori[i], [-1, 1, 1])/tf.pow(10., 9.6), 0.5) * (3/8) * window_size)
-
-
-        phase = []
-        original_delta = (sess.run((self.delta_large), feed_dict)).copy()
-
-        original_delta_np = []
-        for i in range(self.batch_size):
-            original_delta_np.append(np.resize((original_delta[i]), (FLAGS.maxlen_data_set)))
-            phase = ((np.angle(librosa.core.stft(original_delta_np[i], center=False))))
-
-        clipped_final = []
-
-        for i in range(self.batch_size):
-            clipped_final.append(
-                np.resize(librosa.core.istft(np.array(getPhase(np.transpose(clipped_freq[i]), phase)), center=False),
-                          FLAGS.max_length_dataset))
-            # clipped_final[i] = clipped_final[i].resize(FLAGS.max_length_dataset)
-
-        clipped_final = np.array([np.array(i) for i in clipped_final])
-        return tf.convert_to_tensor(clipped_final)
-
-    def unclip(self, clipped, audios, window_size):
-        print(np.shape(audios))
-        win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios, center=False)
-        z = abs(win / window_size)
-        psd_max = np.max(z * z)
-
-        psd = np.square(8.0 / 3. * (clipped / 2048.))
-
-        #unclipped = psd
-        unclipped = (clipped)
-        #np.power(10, 9.6) / psd_max * psd
-
-        return unclipped
 
     def attack_stage1(self, raw_audio, batch_size, lengths, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate,
                       masks, masks_freq, num_loop,

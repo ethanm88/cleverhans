@@ -131,18 +131,17 @@ def applyDefense(batch_size, th_batch, audios_stft, factor):
     return noisy
 
 
-def thresholdPSD(batch_size, th_batch, audios, window_size):
+def thresholdPSD(batch_size, th_batch, audios, window_size, psd_max):
     psd_threshold_batch = []
     for i in range(batch_size):
         win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
         z = abs(win / window_size)
         psd_max = np.max(z * z)
 
-        psd_threshold = np.sqrt(3.0 / 8.) * float(window_size) * np.sqrt(
+        psd_threshold = 3.0 / 8. * float(window_size) * np.sqrt(
             np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
         psd_threshold_batch.append(psd_threshold)
     return psd_threshold_batch
-
 
 def getFreqDomain(batch_size, audios, ATH_batch, sample_rate, th_batch, psd_threshold, num_bins):
     audio_stft = []

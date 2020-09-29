@@ -17,7 +17,7 @@ See Setup and Build Model section for quick installation of all dependencies.
 
 The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). To run this code, you need to first download the forked version [here](https://github.com/ethanm88/lingvo).
 
-# Setup and Build Model
+## Setup and Build Model
 
 In order to build the Lingvo Model and install all dependencies run the setup script in this (adversarial_asr) directory: 
 ```sh setup.sh```.
@@ -60,9 +60,21 @@ python test_robust_adv.py --stage=stage2 --adv=True
 ```
 If you want to test the performance of clean examples played in the simulated rooms, you can set ```--adv=False```.
 
-## Defenses
+## Defense Evaluation
 
-To run defenses on a particular adversarial example, 
+Once you have adversarial examples, you can evaluate their effectiveness against a defense (you must be in the ```adversarial_asr``` directory). If you plan to run our defense, first you must construct defensive perturbations.  
+```
+mkdir noisy_data --num_iter=100 --factor=0.00
+```
+
+You can change the number of defensive perturbations created by changing  ```--num_iter```. Note that defensive perturbations will be randomly pulled from the batch during each evaluation. Next, run the evaluation.
+```
+python2.7 evaluate_defense_mod.py --type_defense=0
+```
+```--type_defense``` can be set to 0 for our defense, 1 for an MP3 compression defense, and 2 for a Quantization defense (Song et al.). Currently, you can also set the ```--perturb_location``` flag to the name of the perturbation wav file.
+
+## Adaptive Adversarial Examples
+
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:

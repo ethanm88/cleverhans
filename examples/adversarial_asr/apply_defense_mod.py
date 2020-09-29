@@ -3,6 +3,7 @@ New File:
 - save_audios method called during execution of the evaluate_defensive_mod.py
 - Generates the input for Lingvo Model during testing
 - Must first generate defensive peturbation files using write_defensive_delta.py
+- Todo: add batch testing
 
 '''
 import librosa as librosa
@@ -14,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
-# from tool import Transform, create_features, create_inputs
+from tool import Transform, create_features, create_inputs, thresholdPSD
 import time
 # from lingvo.core import cluster_factory
 from absl import flags
@@ -44,6 +45,9 @@ flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
 flags.DEFINE_integer('type_defense', '2', 'type of defense to run ')  # 0: ours, 1: MP3, 2: Quantization
+
+flags.DEFINE_string('perturb_name', '_adaptive_stage2_perturb', 'location of perturbation')
+
 
 FLAGS = flags.FLAGS
 
@@ -131,18 +135,6 @@ def applyDefense(batch_size, th_batch, audios_stft, factor):
     return noisy
 
 
-def thresholdPSD(batch_size, th_batch, audios, window_size, psd_max):
-    psd_threshold_batch = []
-    for i in range(batch_size):
-        win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
-        z = abs(win / window_size)
-        psd_max = np.max(z * z)
-
-        psd_threshold = 3.0 / 8. * float(window_size) * np.sqrt(
-            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
-        psd_threshold_batch.append(psd_threshold)
-    return psd_threshold_batch
-
 def getFreqDomain(batch_size, audios, ATH_batch, sample_rate, th_batch, psd_threshold, num_bins):
     audio_stft = []
     freqs = [[[0] * 1025] * 305] * 5
@@ -181,7 +173,7 @@ def randomPhase(angles):
     return np.array(randomized_angles)
 
 
-def overlawAudio(file1, file2, final_file_name):
+def overlayAudio(file1, file2, final_file_name):
     sound1 = AudioSegment.from_file(file1)
     sound2 = AudioSegment.from_file(file2)
 
@@ -292,6 +284,7 @@ def apply_defensive_perturbation(batch_size, psd_threshold, factor, lengths, raw
     # return normalize_input(all_time_series,batch_size, lengths)
     return all_time_series
 
+# need to setup batch testing
 
 def save_audios(factor, index_loop):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
@@ -316,7 +309,7 @@ def save_audios(factor, index_loop):
         if FLAGS.adv:
             for m in range(batch_size):
                 name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
-                perturb_name = name + '_adaptive_stage2_perturb' + '.wav'
+                perturb_name = name + "_" + FLAGS.perturb_name + '.wav'
                 sample_rate_np, delta = wav.read(perturb_name)
                 _, audio_orig = wav.read("./" + str(name) + ".wav")
                 if max(delta) < 1:

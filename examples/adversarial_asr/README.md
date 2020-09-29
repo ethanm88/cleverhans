@@ -1,6 +1,6 @@
-# Imperceptible, Robust and Targeted Adversarial Examples for Automatic Speech Recognition
+# Defense for Adaptive Imperceptible Audio Adversarial Examples Using Proportional Additive Gaussian Noise
 
-This is a Tensorflow implementation for the ICML 2019 paper ["Imperceptible, Robust and Targeted Adversarial Examples for Automatic Speech Recognition"](http://proceedings.mlr.press/v97/qin19a.html). The details of all the models implemented here can be found in the [paper](http://proceedings.mlr.press/v97/qin19a.html).
+This a defense for the imperceptible audio adversarial examples from the ICML 2019 paper ["Imperceptible, Robust and Targeted Adversarial Examples for Automatic Speech Recognition"](http://proceedings.mlr.press/v97/qin19a.html). The details of all the models implemented here can be found in the [paper](http://proceedings.mlr.press/v97/qin19a.html).
 
 ## Dependencies
 *   Python 2.7
@@ -11,47 +11,16 @@ This is a Tensorflow implementation for the ICML 2019 paper ["Imperceptible, Rob
 *   Cython (```pip install Cython```),
 *   pyroomacoustics (```pip install pyroomacoustics```).
 
-## Data 
-Here we provide 10 audios from LibriSpeech test-clean dataset as an example to show how to run the codes. Please refer to [Lingvo](https://github.com/tensorflow/lingvo/tree/master/lingvo/tasks/asr/tools) or [Librispeech website](http://www.openslr.org/resources/12/) to download the whole test set.
-
-In the file ```read_data.txt```, the directory of the 10 audios, the corresponding original transcription and the targeted transcription are provided in the format of [dir, original transcription, targeted transcription]. The full list of 1000 audio examples used in our experiments is provided in ```./util/read_data_ful.txt```.
-
-You can run the script ```sh util/convert_name_format.sh``` to convert the audios in the LibriSpeech from the format ```.flac```  to ```.wav```. You need to first change the directory of the downloaded LibriSpeech dataset in the script ```./util/convert_name_format.sh```.
-
-## Pretrained model
-The pretrained model can be downloaded [here](http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001). You need to place the downloaded pretrained model into the directory ```./model/```.
+See Setup and Build Model section for quick installation of all dependencies.
 
 ## Lingvo ASR system
 
-The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). To run our codes, you need to first download the forked version [here](https://github.com/yaq007/lingvo) and make sure that you are in the "icml" branch.
+The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). To run this code, you need to first download the forked version [here](https://github.com/ethanm88/lingvo).
 
-```bash
-git clone https://github.com/yaq007/lingvo.git
-cd lingvo
-git checkout icml
-```
-Then you need to compile the lingvo system. The easiest way to build [Lingvo system](https://github.com/tensorflow/lingvo) is to use the [docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/). Here we place the folder ```lingvo/``` and ```lingvo_compiled/``` under the root directory ```~/```. If you change their locations, you need to make corresponding changes in the following commands.
+# Setup and Build Model
 
-
-```bash
-cd ..
-mkdir lingvo_compiled
-
-export LINGVO_DEVICE="gpu"
-sudo docker build --no-cache --tag tensorflow:lingvo $(test "$LINGVO_DEVICE" = "gpu" && echo "--build-arg base_image=nvidia/cuda:10.0-cudnn7-runtime-ubuntu16.04") - < lingvo/docker/dev.dockerfile
-
-export LINGVO_DIR=$HOME/lingvo
-sudo docker run --rm $(test "$LINGVO_DEVICE" = "gpu" && echo "--runtime=nvidia") -it -v ${LINGVO_DIR}:/tmp/lingvo -v ~/lingvo_compiled:/tmp/lingvo_compiled -v ${HOME}/.gitconfig:/home/${USER}/.gitconfig:ro -p 6006:6006 -p 8888:8888 --name lingvo tensorflow:lingvo bash
-
-# In docker
-bazel build -c opt --config=cuda //lingvo:trainer
-cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo /tmp/lingvo_compiled
-
-# Outside of docker
-sudo chown -R $USER ~/lingvo_compiled
-export PYTHONPATH=$PYTHONPATH:~/lingvo_compiled
-```
-The folder ```lingvo/``` in the directory ```lingvo_compiled/``` needs to be placed in the directory ```./adversarial_asr/```. Then this directory becomes ```./adversarial_asr/lingvo/```.
+In order to build the Lingvo Model and install all dependencies run the setup script in this (adversarial_asr) directory: 
+```sh setup.sh```.
 
 ## Imperceptible Adversarial Examples
 
@@ -90,6 +59,10 @@ To test the performance of robust adversarial examples, simply run
 python test_robust_adv.py --stage=stage2 --adv=True
 ```
 If you want to test the performance of clean examples played in the simulated rooms, you can set ```--adv=False```.
+
+## Defenses
+
+To run defenses on a particular adversarial example, 
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:

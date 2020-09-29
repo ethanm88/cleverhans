@@ -16,7 +16,7 @@ import wer_calculation
 import numpy as np
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
-from tool import Transform, create_features, create_inputs
+from tool import Transform, create_features, create_inputs, thresholdPSD
 import time
 from lingvo.core import cluster_factory
 from absl import flags
@@ -126,18 +126,6 @@ def ReadFromWav(data, batch_size):
 def getPhase(radii, angles):
     return radii * np.exp(1j * angles)
 
-
-def thresholdPSD(batch_size, th_batch, audios, window_size, psd_max):
-    psd_threshold_batch = []
-    for i in range(batch_size):
-        win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
-        z = abs(win / window_size)
-        psd_max = np.max(z * z)
-
-        psd_threshold = 3.0 / 8. * float(window_size) * np.sqrt(
-            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
-        psd_threshold_batch.append(psd_threshold)
-    return psd_threshold_batch
 
 
 def normalize_input(all_time_series, batch_size, lengths):

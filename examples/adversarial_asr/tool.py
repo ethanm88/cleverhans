@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from lingvo.core import asr_frontend
 from lingvo.core import py_utils
+import librosa as librosa
 
 def _MakeLogMel(audio, sample_rate):
   audio = tf.expand_dims(audio, axis=0)
@@ -92,6 +93,18 @@ def create_speech_rir(audios, rir, lengths_audios, max_len, batch_size):
         speech_rir.append(tf.expand_dims(ret, axis=0))
     speech_rirs = tf.concat(speech_rir, axis=0)
     return speech_rirs
+
+def thresholdPSD(batch_size, th_batch, audios, window_size, psd_max):
+    psd_threshold_batch = []
+    for i in range(batch_size):
+        win = np.sqrt(8.0 / 3.) * librosa.core.stft(audios[i], center=False)
+        z = abs(win / window_size)
+        psd_max = np.max(z * z)
+
+        psd_threshold = 3.0 / 8. * float(window_size) * np.sqrt(
+            np.multiply(th_batch[i], psd_max) / float(pow(10, 9.6)))
+        psd_threshold_batch.append(psd_threshold)
+    return psd_threshold_batch
 
 def get_clipped_sample(psd_max_ori, th, apply_delta, batch_size,window_size):
     transform = Transform(window_size)

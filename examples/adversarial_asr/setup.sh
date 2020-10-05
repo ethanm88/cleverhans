@@ -17,7 +17,7 @@ git checkout clean-testing
 
 cd examples/adversarial_asr/model/ || exit
 
-wget http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001
+#wget http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001
 
 
 

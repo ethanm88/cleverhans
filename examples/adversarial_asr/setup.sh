@@ -107,9 +107,6 @@ cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo ./lingvo_compiled
 
 cd ..
 
-export PYTHONPATH=$PYTHONPATH: ./lingvo_compiled
-
-
 
 cd ./lingvo_compiled/ || exit
 

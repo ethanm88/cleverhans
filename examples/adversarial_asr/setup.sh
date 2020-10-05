@@ -13,7 +13,7 @@ python2.7 -m pip install pydub
 
 cd cleverhans
 
-git checkout testing
+git checkout clean-testing
 
 cd examples/adversarial_asr/model/
 

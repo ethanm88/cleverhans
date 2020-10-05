@@ -46,6 +46,7 @@ flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
 flags.DEFINE_integer('type_defense', '2', 'type of defense to run ')  # 0: ours, 1: MP3, 2: Quantization
 
+flags.DEFINE_bool('adaptive', 'true', 'specifies which type of attack is being tested') # if adpative, need to specify the perturb_name
 flags.DEFINE_string('perturb_name', '_adaptive_stage2_perturb', 'location of perturbation')
 
 
@@ -307,20 +308,25 @@ def save_audios(factor, index_loop):
             data_new, batch_size)
         delta_np = numpy.array([0])
         if FLAGS.adv:
-            for m in range(batch_size):
+            if FLAGS.adaptive:
+                for m in range(batch_size):
+                    name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
+                    perturb_name = name + "_" + FLAGS.perturb_name + '.wav'
+                    sample_rate_np, delta = wav.read(perturb_name)
+                    _, audio_orig = wav.read("./" + str(name) + ".wav")
+                    if max(delta) < 1:
+                        delta = delta * 32768
+                    audio_np = audio_orig + delta
+                    delta_np = delta
+                    combined_adv = audio_np / 32768.
+                    wav.write(name + '_adaptive_combined.wav', 16000,
+                              np.array(np.clip(combined_adv[:lengths[m]], -2 ** 15, 2 ** 15 - 1)))
+                    data_new[0][m] = name + '_adaptive_combined.wav'
+                    print("Testing: " + name + '_adaptive_combined.wav')
+            else:
                 name = data_sub[0][m][0:len(data_sub[0][m]) - 4]
-                perturb_name = name + "_" + FLAGS.perturb_name + '.wav'
-                sample_rate_np, delta = wav.read(perturb_name)
-                _, audio_orig = wav.read("./" + str(name) + ".wav")
-                if max(delta) < 1:
-                    delta = delta * 32768
-                audio_np = audio_orig + delta
-                delta_np = delta
-                combined_adv = audio_np / 32768.
-                wav.write(name + '_adaptive_combined.wav', 16000,
-                          np.array(np.clip(combined_adv[:lengths[m]], -2 ** 15, 2 ** 15 - 1)))
-                data_new[0][m] = name + '_adaptive_combined.wav'
-                print(name + '_adaptive_combined.wav')
+                data_new[0][m] = name + '_stage2.wav'
+                print('Testing' + name + '_stage2.wav')
 
         raw_audio, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
             data_new, batch_size)

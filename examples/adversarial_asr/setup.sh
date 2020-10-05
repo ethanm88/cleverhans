@@ -110,8 +110,6 @@ cd ../lingvo_compiled/ || exit
 
 mv lingvo ../cleverhans/examples/adversarial_asr/
 
-cd ./cleverhans/examples/adversarial_asr/ || exit
-
 
 
 

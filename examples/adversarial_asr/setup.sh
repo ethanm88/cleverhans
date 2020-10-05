@@ -11,11 +11,11 @@ python2.7 -m pip install pydub
 
 
 
-cd cleverhans
+cd cleverhans || exit
 
 git checkout clean-testing
 
-cd examples/adversarial_asr/model/
+cd examples/adversarial_asr/model/ || exit
 
 wget http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001
 
@@ -100,7 +100,7 @@ mkdir lingvo_compiled
 export LINGVO_DEVICE="gpu"
 export LINGVO_DIR=$HOME/lingvo
 
-cd lingvo
+cd lingvo || exit
 
 bazel build -c opt --config=cuda //lingvo:trainer
 cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo ./lingvo_compiled
@@ -110,13 +110,13 @@ export PYTHONPATH=$PYTHONPATH: ./lingvo_compiled
 
 
 
-cd ./lingvo_compiled/
+cd ./lingvo_compiled/ || exit
 
 mv lingvo ./cleverhans/examples/adversarial_asr/
 
 cd ..
 
-cd ./cleverhans/examples/adversarial_asr/
+cd ./cleverhans/examples/adversarial_asr/ || exit
 
 
 

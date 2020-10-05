@@ -103,16 +103,12 @@ export LINGVO_DIR=$HOME/lingvo
 cd lingvo || exit
 
 bazel build -c opt --config=cuda //lingvo:trainer
-cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo ./lingvo_compiled
-
-cd ..
+cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo ../lingvo_compiled
 
 
-cd ./lingvo_compiled/ || exit
+cd ../lingvo_compiled/ || exit
 
-mv lingvo ./cleverhans/examples/adversarial_asr/
-
-cd ..
+mv lingvo ../cleverhans/examples/adversarial_asr/
 
 cd ./cleverhans/examples/adversarial_asr/ || exit
 

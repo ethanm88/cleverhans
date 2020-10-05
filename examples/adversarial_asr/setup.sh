@@ -99,8 +99,7 @@ mkdir lingvo_compiled
 
 export LINGVO_DEVICE="gpu"
 export LINGVO_DIR=$HOME/lingvo
-echo $PATH
-cd lingvo || exit
+
 
 bazel build -c opt --config=cuda //lingvo:trainer
 cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo ./lingvo_compiled

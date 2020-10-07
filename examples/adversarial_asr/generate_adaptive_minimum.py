@@ -1,6 +1,7 @@
 '''
 Original:
 - generates imperceptible untargeted adaptive adversarial examples
+- Needs to be checked -> not folly tested
 - Ethan: need new file that generates normal untargeted adverarial examples
 
 '''

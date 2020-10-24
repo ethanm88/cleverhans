@@ -5,12 +5,7 @@ Original File:
 - copy code from master
 
 '''
-import sys
-
 import tensorflow as tf
-from tensorflow_on_slurm import tf_config_from_slurm
-
-
 from lingvo import model_imports
 from lingvo import model_registry
 import numpy as np
@@ -408,14 +403,6 @@ def main(argv):
     num_loops = num / batch_size
     assert num % batch_size == 0
 
-
-    cluster, my_job_name, my_task_index = tf_config_from_slurm(ps_number=1)
-    cluster_spec = tf.train.ClusterSpec(cluster)
-    server = tf.train.Server(server_or_cluster_def=cluster_spec, job_name=my_job_name, task_index=my_task_index)
-    if my_job_name == 'ps':
-        server.join()
-        sys.exit(0)
-        
     with tf.device("/gpu:0"):
         tfconf = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=tfconf) as sess:

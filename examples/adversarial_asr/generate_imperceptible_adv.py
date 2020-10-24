@@ -5,7 +5,7 @@ Original File:
 - copy code from master
 
 '''
-import tensorflow as tf
+#import tensorflow as tf
 from lingvo import model_imports
 from lingvo import model_registry
 import numpy as np

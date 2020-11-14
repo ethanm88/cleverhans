@@ -396,68 +396,7 @@ class Attack:
 
 
 def main(argv):
-    data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
-    data = data[:, FLAGS.num_gpu * 10: (FLAGS.num_gpu + 1) * 10]
-    num = len(data[0])
-    batch_size = FLAGS.batch_size
-    num_loops = num / batch_size
-    assert num % batch_size == 0
-
-    with tf.device("/gpu:0"):
-        tfconf = tf.ConfigProto(allow_soft_placement=True)
-        with tf.Session(config=tfconf) as sess:
-            # set up the attack class
-            attack = Attack(sess,
-                            batch_size=batch_size,
-                            lr_stage1=FLAGS.lr_stage1,
-                            lr_stage2=FLAGS.lr_stage2,
-                            num_iter_stage1=FLAGS.num_iter_stage1,
-                            num_iter_stage2=FLAGS.num_iter_stage2)
-
-            num_loops = 1
-            for l in range(num_loops):
-                data_sub = data[:, l * batch_size:(l + 1) * batch_size]
-
-                # stage 1
-                # all the output are numpy arrays
-                audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(
-                    data_sub, batch_size)
-                adv_example = attack.attack_stage1(audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks,
-                                                   masks_freq, l, data_sub, FLAGS.lr_stage2)
-
-                # save the adversarial examples in stage 1
-                for i in range(batch_size):
-                    print("Final distortion for stage 1",
-                          np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))
-                    name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_stage1.wav"
-                    adv_example_float = adv_example[i] / 32768.
-                    wav.write(saved_name, 16000, np.array(adv_example_float[:lengths[i]]))
-                    print(saved_name)
-
-                    # stage 2
-                # read the adversarial examples saved in stage 1
-                adv = np.zeros([batch_size, FLAGS.max_length_dataset])
-                adv[:, :maxlen] = adv_example - audios
-
-                adv_example, loss_th, final_alpha = attack.attack_stage2(audios, trans, adv, th_batch, psd_max_batch,
-                                                                         maxlen, sample_rate, masks, masks_freq, l,
-                                                                         data_sub, FLAGS.lr_stage2)
-
-                # save the adversarial examples in stage 2
-                for i in range(batch_size):
-                    print("example: {}".format(i))
-                    print("Final distortion for stage 2: {}, final alpha is {}, final loss_th is {}".format(
-                        np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])), final_alpha[i],
-                        loss_th[i]))
-
-                    name, _ = data_sub[0, i].split(".")
-                    saved_name = FLAGS.root_dir + str(name) + "_stage2.wav"
-                    adv_example[i] = adv_example[i] / 32768.
-                    print('size', np.array(adv_example[i][:lengths[i]]).size)
-
-                    wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
-                    print(saved_name)
+    print("hello1");
 
 
 if __name__ == '__main__':
